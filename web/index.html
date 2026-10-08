@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FirstLight — 6 AM, for the air a child breathes</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#151a22; --line:#232b36; --text:#e8edf4;
+    --dim:#8fa0b5; --accent:#57b6ff; --good:#2eb872; --amber:#f8a01c; --red:#e0553c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 14px 48px}
+  header{display:flex;align-items:baseline;gap:10px;padding:8px 0 14px;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:20px;letter-spacing:.4px}
+  header h1 em{font-style:normal;color:var(--accent)}
+  header .tag{color:var(--dim);font-size:12px;margin-left:auto;white-space:nowrap}
+  .board{display:grid;gap:12px;margin:16px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .card h3{margin:0 0 4px;font-size:14px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .big{font-size:30px;font-weight:700;line-height:1.1}
+  .sub{color:var(--dim);font-size:13px}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .nm{font-size:14px}
+  .row .ws{color:var(--dim);font-size:12px}
+  .chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .good{background:rgba(46,184,114,.16);color:var(--good)} .amber{background:rgba(248,160,28,.16);color:var(--amber)} .red{background:rgba(224,85,60,.18);color:var(--red)}
+  .ledger{color:#cfd8e3;font-size:13px;line-height:1.55}
+  .chat{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding:4px}
+  .bub{max-width:82%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.5}
+  .bub.you{align-self:flex-end;background:var(--accent);color:#062b47}
+  .bub.ai{align-self:flex-start;background:#1c2530;border:1px solid var(--line)}
+  .bub .meta{display:block;font-size:10px;color:var(--dim);margin-top:4px}
+  .inputbar{display:flex;gap:8px;margin-top:10px}
+  input{flex:1;background:#0f141b;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 13px;font-size:14px}
+  input:focus{outline:1px solid var(--accent)}
+  button{background:var(--accent);border:0;color:#062b47;font-weight:700;border-radius:10px;padding:11px 16px;font-size:14px;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--dim)}
+  button.ghost:hover{color:var(--text)}
+  .pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .pill{background:#1c2530;border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .pill:hover{color:var(--text);border-color:var(--accent)}
+  .demo{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:12px;color:var(--dim)}
+  .notif{background:rgba(46,184,114,.1);border:1px solid rgba(46,184,114,.35);color:#b7e6cf;border-radius:10px;padding:8px 12px;font-size:12px;margin-top:10px;display:none}
+  .src{color:var(--dim);font-size:11px;display:block;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FirstLight<em>.</em></h1>
+    <span class="tag">6 AM · NCR · 2026-10-08</span>
+  </header>
+
+  <div class="board">
+    <div class="card">
+      <h3>Ward decision engine</h3>
+      <div class="big" id="peakbox" style="color:var(--amber)">—</div>
+      <div class="sub" id="peaksrc">peaking ward station AQI</div>
+      <div class="row"><span class="nm">GRAP stage</span><span class="chip amber" id="grapbox">—</span></div>
+      <div class="row"><span class="nm">Schools closed</span><span class="chip red" id="closedbox" style="display:none">—</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Change ledger · overnight</h3>
+      <div class="ledger" id="ledgerbox">Loading…</div>
+    </div>
+
+    <div class="card">
+      <h3>Schools on this morning</h3>
+      <div id="schools"></div>
+      <div class="pillrow" id="quickpills"></div>
+    </div>
+
+    <div class="card">
+      <h3>Ask FirstLight</h3>
+      <div class="chat" id="chat"></div>
+      <div class="inputbar">
+        <input id="inp" placeholder='"good morning — is today safe for school?"' autocomplete="off">
+        <button id="send">Ask</button>
+      </div>
+      <div class="pillrow">
+        <span class="pill">why?</span>
+        <span class="pill">what do we do</span>
+        <span class="pill">send it</span>
+      </div>
+      <div class="demo"><span>Judge mode:</span>
+        <button class="ghost" id="runbad">▶ Run the bad morning</button>
+        <span class="sub">deterministic · camera-proof</span>
+      </div>
+      <div class="notif" id="notif"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+let activeSchool = "s-avini";
+let scripted = false;
+
+async function j(u,opt){
+  const r = await fetch(u,opt);
+  return r.json();
+}
+
+function decideCard(s, d){
+  const color = d.level===2?"var(--red)":d.level===1?"var(--amber)":"var(--good)";
+  const chip = d.levelName==="RED"?'red':d.levelName==="AMBER"?'amber':'good';
+  return `<div class="row"><div><div class="nm">${s.name}</div><div class="ws">${s.ward} · strength ${s.strength}</div></div>
+  <span class="chip ${chip}" style="color:${color}">${d.levelName} · AQI ${d.aqi}</span></div>`;
+}
+
+async function load(){
+  const snap = await j("/api/snapshot");
+  const led  = await j("/api/ledger");
+  const peak = led.pressure_stations.length ? Math.max(...led.pressure_stations.map(r=>r.aqi)) : 0;
+  $("#peakbox").textContent = peak ? `AQI ${peak}` : "AQI —";
+  $("#peaksrc").textContent = peak ? `${led.pressure_stations.length} stations over 200` : "dashboard";
+  $("#grapbox").textContent = peak>=450?"Stage IV":peak>=401?"Stage III":peak>=301?"Stage II":peak>=201?"Stage I":"—";
+  $("#ledgerbox").textContent = led.what_changed + " Wind: " + led.wind.note;
+  let reds = 0;
+  const host = $("#schools");
+  for(const s of snap.schools){
+    const st = snap.stations.find(x=>x.id===s.station_id);
+    const d = await j("/api/turn",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({caller:"system",schoolId:s.id,text:""})});
+    const dec = d.turn.decision;
+    if(dec.level===2) reds++;
+    host.innerHTML += decideCard(s, dec);
+  }
+  const cb = $("#closedbox"); if(reds){cb.style.display="inline-block"; cb.textContent=`${reds} closed`;}
+  addBubble("ai","Good morning. I'm FirstLight, the 6 AM call for the air a child breathes. Ask me \"is today safe for school?\", \"why?\", or say \"send it\" force an alert. I only act on those exact words.");
+}
+
+let seq=0;
+function addBubble(who,txt,meta){
+  seq++;
+  const top=$("#chat");
+  const el=document.createElement("div");
+  el.className="bub "+(who==="you"?"you":"ai");
+  el.innerHTML=`${txt}${meta?`<span class="meta">${meta}</span>`:""}`;
+  top.appendChild(el); top.scrollTop=top.scrollHeight;
+}
+
+async function turn(raw){
+  addBubble("you", raw);
+  const r = await j("/api/turn",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({caller:"parent",schoolId:activeSchool,text:raw})});
+  const t = r.turn;
+  addBubble("ai", t.reply, t.intent+" · "+activeSchool);
+  if(t.notified && t.sent){
+    const n=$("#notif"); n.style.display="block";
+    n.textContent = "Alert sent · " + t.sent.message + " · " + t.sent.reference;
+  }
+}
+
+$("#send").onclick=()=>{const v=$("#inp").value.trim(); if(!v)return; $("#inp").value=""; turn(v);};
+$("#inp").addEventListener("keydown",e=>{if(e.key==="Enter"){$("#send").click();}});
+
+document.querySelectorAll(".pill").forEach(p=>{
+  p.onclick=()=>turn(p.textContent);
+});
+
+$("#runbad").onclick=async()=>{
+  scripted=true;
+  $("#runbad").disabled=true;
+  $("#chat").innerHTML="";
+  const d = await j("/api/demo?school="+activeSchool);
+  for(const t of d.turns){
+    addBubble("you", t.text);
+    addBubble("ai", t.reply, t.intent+" · "+activeSchool);
+    if(t.notified && t.sent){
+      const n=$("#notif"); n.style.display="block";
+      n.textContent = "Alert sent · " + t.sent.message + " · " + t.sent.reference;
+    }
+    await new Promise(res=>setTimeout(res,880));
+  }
+  $("#runbad").disabled=false;
+  const d2 = await j("/api/notifications");
+  addBubble("ai", `Session done. Notification ledger has ${d2.sent.length} entry. Refresh to replay — identical every run.`);
+};
+
+load();
+</script>
+</body>
+</html>
