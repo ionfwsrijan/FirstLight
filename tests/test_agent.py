@@ -4,96 +4,110 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from firstlight import agent
+from firstlight.agent import ConsentState, consent_turn, parse
+from firstlight.agent.certificate import RULESET_VERSION, sign, verify
+from firstlight.domain import Decision, Level, RuleHit
 
 
-class TestAgentIntent(unittest.TestCase):
-    def test_greet(self):
-        t = agent.answer("parent", "s-avini", "")
-        self.assertEqual(t.intent, "greet")
+class TestIntents(unittest.TestCase):
+    def test_status(self):
+        self.assertEqual(parse("is today safe for school?").name, "status")
 
-    def test_reason_intent(self):
-        t = agent.answer("parent", "s-avini", "why?")
-        self.assertEqual(t.intent, "reason")
+    def test_why(self):
+        self.assertEqual(parse("why?").name, "why")
+        self.assertEqual(parse("kyun itna bad?").name, "why")
 
-    def test_reason_contains_engine_text(self):
-        t = agent.answer("parent", "s-avini", "why is it bad")
-        self.assertEqual(t.intent, "reason")
-        self.assertIn("AQI", t.reply)
-
-    def test_safe_word_returns_status(self):
-        t = agent.answer("parent", "s-avini", "is today safe for school?")
-        self.assertEqual(t.intent, "safe")
-        self.assertIn("RED", t.reply)
-
-    def test_ask_fires(self):
-        t = agent.answer("parent", "s-avini", "what changed overnight? any fires?")
-        self.assertEqual(t.intent, "ask")
-        assert "fire" in t.reply.lower() or "stubble" in t.reply.lower()
+    def test_change(self):
+        self.assertEqual(parse("what changed overnight?").name, "change")
+        self.assertEqual(parse("stubble fires?").name, "change")
 
     def test_actions(self):
-        t = agent.answer("parent", "s-avini", "what do we do")
-        self.assertEqual(t.intent, "actions")
+        self.assertEqual(parse("what do we do?").name, "actions")
 
-    def test_fallback(self):
-        t = agent.answer("parent", "s-avini", "hello there")
-        self.assertEqual(t.intent, "fallback")
+    def test_send(self):
+        self.assertEqual(parse("send it to parents").name, "send")
+        self.assertEqual(parse("bhejo").name, "send")
 
+    def test_recall(self):
+        self.assertEqual(parse("cancel the alert").name, "recall")
+        self.assertEqual(parse("wapis le lo").name, "recall")
 
-class TestConsentGate(unittest.TestCase):
-    def test_yes_never_sends(self):
-        agent.reset_session()
-        t = agent.answer("parent", "s-avini", "yes sure")
-        self.assertFalse(t.notified)
-        self.assertIsNone(t.sent)
+    def test_greet_empty(self):
+        self.assertEqual(parse("").name, "greet")
+        self.assertEqual(parse("hello").name, "greet")
 
-    def test_no_send_without_phrase(self):
-        agent.reset_session()
-        t = agent.answer("parent", "s-avini", "please let parents know")
-        self.assertFalse(t.notified)
-
-    def test_send_requires_exact_phrase(self):
-        agent.reset_session()
-        t = agent.answer("parent", "s-avini", "send it")
-        self.assertTrue(t.notified)
-        self.assertIsNotNone(t.sent)
-        self.assertIn("FIRSTLIGHT-", t.sent["reference"])
-
-    def test_synonym_send(self):
-        agent.reset_session()
-        t = agent.answer("parent", "s-avini", "send the alert now")
-        self.assertTrue(t.notified)
-
-    def test_recall_requires_history(self):
-        agent.reset_session()
-        t = agent.answer("parent", "s-avini", "cancel the alert")
-        self.assertNotIn("withdrawn", t.reply)
-
-    def test_send_then_recall_pop(self):
-        agent.reset_session()
-        agent.answer("parent", "s-avini", "send it")
-        t = agent.answer("parent", "s-avini", "cancel the alert")
-        self.assertIn("withdrawn", t.reply)
-        self.assertEqual(len(agent.notification_ledger()), 0)
-
-    def test_send_ledger_growth(self):
-        agent.reset_session()
-        agent.answer("parent", "s-avini", "send it")
-        agent.answer("parent", "s-avini", "send to parents")
-        self.assertEqual(len(agent.notification_ledger()), 2)
+    def test_unknown(self):
+        self.assertEqual(parse("qwerty nonsense").name, "unknown")
 
 
-class TestDecisionMirroring(unittest.TestCase):
-    def test_decision_present_and_static(self):
-        agent.reset_session()
-        t = agent.answer("parent", "s-avini", "send it")
-        self.assertEqual(t.decision["levelName"], "RED")
-        self.assertEqual(t.sent["message"], "School day status: RED")
+class TestConsent(unittest.TestCase):
+    def test_question_must_not_send(self):
+        state = ConsentState()
+        gate = consent_turn(state, "send", "would you send it if asked?")
+        self.assertFalse(gate["maySend"])
 
-    def test_different_schools_differ(self):
-        a = agent.answer("parent", "s-avini", "").decision["aqi"]
-        b = agent.answer("parent", "s-granite", "").decision["aqi"]
-        self.assertGreater(a, b)
+    def test_explicit_confirm_sends(self):
+        state = ConsentState()
+        gate = consent_turn(state, "send", "yes, send it")
+        self.assertTrue(gate["maySend"])
+
+    def test_send_requires_own_turn(self):
+        state = ConsentState()
+        state.observe("send", "send it")  # earlier turn asked
+        gate = consent_turn(state, "why", "ok go ahead")
+        self.assertFalse(gate["maySend"])  # new turn is 'why', not a send
+
+    def test_status_never_sends(self):
+        state = ConsentState()
+        gate = consent_turn(state, "status", "is it safe?")
+        self.assertFalse(gate["maySend"])
+
+    def test_recall_intent_does_not_send(self):
+        state = ConsentState()
+        gate = consent_turn(state, "recall", "cancel")
+        self.assertFalse(gate["maySend"])
+
+
+def _decision() -> Decision:
+    school_id = "s-avini"
+    return Decision(
+        school_id=school_id,
+        date="2026-10-08",
+        level=Level.CLOSED,
+        aqi_effective=442.0,
+        band_label="Severe",
+        band_hex="#8a1320",
+        grap_stage=3,
+        fires_upwind=6,
+        plume_score=3.0,
+        trend="rising",
+        reasons=(RuleHit("R-CLOSE-401", "Severe", "AQI>=401 closes", True),),
+        actions=("Declare online day",),
+        evidence={"features": {"aqi_eff": 442.0}},
+    )
+
+
+class TestCertificate(unittest.TestCase):
+    def test_sign_and_verify(self):
+        cert = sign(_decision(), "secret")
+        claims = verify(cert, "secret")
+        self.assertIsNotNone(claims)
+        self.assertEqual(claims["schoolId"], "s-avini")
+        self.assertEqual(claims["level"], 2)
+        self.assertEqual(claims["ruleset"], RULESET_VERSION)
+
+    def test_wrong_secret_rejected(self):
+        cert = sign(_decision(), "secret")
+        self.assertIsNone(verify(cert, "wrong-secret"))
+
+    def test_tampered_rejected(self):
+        cert = sign(_decision(), "secret")
+        sig, canonical = cert.split(":", 1)
+        forged = sig + ":" + canonical.replace('"aqiEffective": 442.0', '"aqiEffective": 150.0')
+        self.assertIsNone(verify(forged, "secret"))
+
+    def test_malformed_rejected(self):
+        self.assertIsNone(verify("garbage", "secret"))
 
 
 if __name__ == "__main__":
