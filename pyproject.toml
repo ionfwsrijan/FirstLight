@@ -1,0 +1,20 @@
+[project]
+name = "firstlight"
+version = "0.2.0"
+description = "FirstLight — the 6 AM on-call agent for the air a child breathes."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+test = ["httpx>=0.27"]
+aws = ["aws-lambda-powertools>=2.40"]
+
+[tool.setuptools.packages.find]
+include = ["firstlight*"]
+
+[tool.unittest]
+start-directory = "tests"
