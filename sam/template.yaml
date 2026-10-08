@@ -1,0 +1,166 @@
+# FirstLight — Ship It (AWS SAM) mirror of the local Build It app.
+#
+# The local product (FastAPI + SQLite) is the primary, demoable build. This
+# SAM application is the deployable twin: the exact same decision engine and
+# rule DSL run inside Lambda, with the same data written to DynamoDB and the
+# same capability model enforced by AWS-native auth (Cognito + IAM policy).
+# Authorization logic mirrors firstlight/auth/cedar/policies.cedar.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  FirstLight Ship It track — 6 AM school-air agent. Decision engine is
+  deterministic (CPCB bands, GRAP stages, stubble-plume model, custom rule
+  DSL): pure Python shared with the local build via a Lambda layer.
+
+Parameters:
+  Env:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+  AlertHookUrl:
+    Type: String
+    Default: ""
+    Description: Optional Slack/Teams webhook for alert delivery.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Architectures: [arm64]
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref DecisionsTable
+        ENV: !Ref Env
+        RULESET_VERSION: firstlight-rules-v2@2026-10
+        ALERT_HOOK_URL: !Ref AlertHookUrl
+    Layers:
+      - !Ref FirstLightCoreLayer
+
+Resources:
+  # ---- Data (mirror of the local decisions/alerts/history tables) ----
+  DecisionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  # ---- Auth: Cognito mirrors the parent/principal/officer roles ----
+  FirstLightUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub firstlight-${Env}-pool
+      AutoVerifiedAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 10
+          RequireUppercase: true
+          RequireNumbers: true
+  FirstLightUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref FirstLightUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
+
+  # ---- The core decision layer (pure Python, shared with local build) ----
+  FirstLightCoreLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: firstlight-core
+      Description: firstlight package (engine, dsl, ledger, agent). Built by build-layer.ps1.
+      ContentUri: build-layer
+      CompatibleRuntimes: [python3.12]
+
+  # ---- Lambdas (harmless mirror of the local API) ----
+  MorningHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: morning.handler
+      Policies: [AmazonDynamoDBFullAccess]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /morning
+            Method: POST
+            RestApiId: !Ref FirstLightApi
+            Auth:
+              Authorizer: FirstLightAuthorizer
+
+  SchoolStatusHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: morning.status_handler
+      Policies: [AmazonDynamoDBReadOnlyAccess]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /status
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+            Auth:
+              Authorizer: FirstLightAuthorizer
+
+  TalkHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: talk.handler
+      Policies: [AmazonDynamoDBFullAccess]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /talk
+            Method: POST
+            RestApiId: !Ref FirstLightApi
+            Auth:
+              Authorizer: FirstLightAuthorizer
+
+  # ---- AuthN/AuthZ resource ----
+  FirstLightAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: CognitoAuthorizer
+      Type: COGNITO_USER_POOLS
+      RestApiId: !Ref FirstLightApi
+      IdentitySource: method.request.header.Authorization
+      ProviderArns:
+        - !GetAtt FirstLightUserPool.Arn
+
+  FirstLightApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Env
+      Auth:
+        DefaultAuthorizer: FirstLightAuthorizer
+        Authorizers:
+          FirstLightAuthorizer:
+            UserPoolArn: !GetAtt FirstLightUserPool.Arn
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL.
+    Value: !Sub https://${FirstLightApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/
+  UserPoolId:
+    Description: Cognito user pool id for role assignment.
+    Value: !Ref FirstLightUserPool
+  UserPoolClientId:
+    Description: Cognito client id for the console.
+    Value: !Ref FirstLightUserPoolClient
