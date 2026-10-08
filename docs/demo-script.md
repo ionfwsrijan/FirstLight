@@ -1,41 +1,67 @@
-# FirstLight — 3-minute demo film playbook
+# FirstLight — demo script (pre-recorded, ~3 minutes)
 
-Rule of the competition: a 3-minute **pre-recorded** video, no live demo. The
-film must look deterministic even though it is recorded. So the film IS the
-deterministic demo, run for real, on camera. This is not a mock.
+Everything below is the real running app against `pipeline/scenario.py`'s
+frozen morning of **2026-10-08**. Because the scenario is frozen, the film can
+be re-recorded any number of times and the verdicts never change.
 
-## Structure (goal: 3:00 ± 10s)
+## Shot 1 — the console boots (0:00–0:20)
 
-| Time | Beat | What is on screen | Why it lands |
-|---|---|---|---|
-| 00:00 | Cold open | Phone face-down, 05:57 shows, alarm, "6 AM" | The exact moment. No intro slide yet. |
-| 00:15 | The question | a parent asks the console, out loud, on camera: *"good morning — is today safe for school?"* | The 3-word job. |
-| 00:22 | It answers | FirstLight replies: RED, AQI, GRAP, fires | The whole product in 7 seconds. |
-| 00:30 | Why | Ask "why?" — it cites the band table line | The AI narrates, the engine decides. |
-| 00:42 | What do we do | Action list for a RED day | It turns the decision into a to-do. |
-| 00:55 | Send it | Say "send it" — certificate with reference number appears | Consent-from-transcript, in front of the camera. |
-| 01:08 | The objection | Camera-zoom: *"Yes" should do nothing.* Say "yes", show nothing happens. Then say "cancel the alert" → recall. | This is the safety-model bit. It wins trust in 10 seconds. |
-| 01:28 | The engine | Split screen: `/tests` green, then the single-line rule table in `bands.py` | "One feature that runs" + open-source honesty. |
-| 01:45 | Replay proof | Press "Run the bad morning" again → byte-identical transcript | Deterministic, film-proof, zero AWS flake. |
-| 02:05 | Build It | `py -m unittest discover -s tests`: 60/60 green. No card, no verified account. | The credential objection, pre-empted. |
-| 02:20 | The gap | Closing: same decision at 6 AM, city-wide, before symptoms show. | Impact, not features. |
-| 02:40 | Hook | "A child's school day should not depend on who checked the news first." + repo line. | The one line they quote. |
+- `py -m firstlight.cli seed` then `py -m firstlight.cli serve`.
+- Browser opens `http://127.0.0.1:8000`. Point at **/api/health**: `ok`,
+  `version 0.2.0`, `ruleset firstlight-rules-v2@2026-10`.
+- Say it out loud: *"No AWS account, no card, no bill — the demo makes zero
+  network calls."*
 
-## Capture checklist
+## Shot 2 — the frozen inputs (0:20–0:40)
 
-- Single take, no cuts, phone screen + mic. The demo is short enough to run once.
-- Record at 1280x720 or higher. Overlay English subtitles (caller text is on-screen).
-- Never let the video outrun the code: every reply you show was produced during
-  this recording run, or it is a frozen-frame of the same deterministic text.
-- If anything on screen diverges, restart the take. There are no live APIs to fail.
+- Console → **frozen morning inputs**: `2026-10-08`, 7 stations, 7 stubble
+  fires, wind from 310° at 16 km/h.
+- Open `pipeline/scenario.py` in the editor: 7 real-placed NCR schools,
+  Punjab/Haryana fires, 7 prior mornings of history. "Ships frozen so every
+  run is reproducible."
 
-## The trailer (if uploading a short)
+## Shot 3 — the 6 AM question (0:40–1:10)
 
-> "Every Delhi winter, the school call comes too late. FirstLight is the 6 AM call
-> that comes first: the AQI table, the GRAP plan, and the stubble fires, decided
-> by rules beneath the narration — and it will not send a word without consent."
+- Pick **s-avini**, ask: *"is today safe for school?"*
+- Reply pins the evidence: **AQI 442 (Severe), GRAP Stage 3, 6 upwind
+  stubble fires, rising**.
+- Click **run morning** (officer role) → 7 schools: 5 CLOSED, 2 PROTECTED.
+- "The AI narrated this — the engine decided it. There is no code path where
+  the model chooses a verdict."
 
-## Repository links to drop into the description
+## Shot 4 — consent, the safety proof (1:10–1:50)
 
-- Build It, no AWS account needed (runs in 10 seconds, stdlib only).
-- Ship It shape documented; demo makes zero network calls, so it cannot flake.
+- Ask: *"would you send it if the air got worse?"* → status line says
+  **no-send**. Freeze on this frame.
+- Then: *"yes, send it"* → status flips to **MAY SEND**, sent receipt +
+  certificate shown (`FIRSTLIGHT-s-avini-…`, 266 chars).
+- "Sending required the send intent AND an explicit confirmation in the same
+  turn. A question never sends. This is unit-tested."
+
+## Shot 5 — trust, the receipts (1:50–2:10)
+
+- **verify ledger** → `all rows hash-chained, tamper check ✓`.
+- Show `tests/test_ledger.py::test_tamper_detected` editing a row → verify
+  flips to false. "Any offline edit breaks the chain."
+- Show the certificate object in `agent/certificate.py`: HMAC-signed, so a
+  judge can verify a decision later with one command.
+
+## Shot 6 — same engine, cloud-shaped (2:10–2:40)
+
+- Open `firstlight/auth/cedar/policies.cedar`: "AWS **Cedar** is the
+  authorization engine here — genuine AWS open source, Build It Approved."
+- Open `sam/template.yaml`: Cognito ↔ parent/principal/officer, Lambda +
+  DynamoDB mirror, core layer.
+- `sam build-layer.ps1` + `sam validate -t sam\template.yaml` → template is
+  valid today. "Ship It runs the same engine the moment the account clears;
+  until then, this repo is the product."
+
+## Shot 7 — the gate (2:40–3:00)
+
+- `py -m firstlight.cli gate` → **102 tests, OK**.
+- Close on the tagline: *"FirstLight — the 6 AM on-call agent for the air a
+  child breathes."*
+
+## The 60-second fallback (if the film must be shorter)
+
+Shot 3 → Shot 4 (consent) → Shot 6 (Cedar/SAM) → Shot 7 (gate, 102 tests).
