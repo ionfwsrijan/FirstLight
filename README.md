@@ -1,127 +1,220 @@
-# FirstLight — the 6 AM on-call agent for the air a child breathes
+# FirstLight
 
-**Track:** Air · **Path:** Build It + Ship It mirror · **Stack:** Python + FastAPI + SQLite (Build It), AWS SAM + Lambda + DynamoDB + Cognito (Ship It) · **AuthZ engine:** AWS Cedar OSS
+**The 6 AM on-call agent for the air a child breathes — it answers before a single bell rings, and it ships the receipts.**
 
-At 6 AM, before a single bell rings, a parent or a principal needs one answer:
-**is today safe for school?** FirstLight is the call that answers from the
-**CPCB AQI band table, the GRAP action plan, and the overnight stubble-fire
-record** — decided by a deterministic rule engine, narrated (never invented)
-by a conversational agent, sent only after explicit consent, and backed by a
-tamper-evident ledger and signed certificates.
+> **Track:** Air · **Path:** Build It + Ship It mirror.
+> This repository is the **First Commit** entry: a deterministic, fully-tested
+> school-air agent that runs today with **no AWS account, no credit card, no
+> bill** (the Build It path: FastAPI + SQLite, with AWS **Cedar** open-source
+> authorization in the loop). A deployable **Ship It twin** lives in
+> [`sam/`](sam/template.yaml) — Lambda + DynamoDB + Cognito running the *same*
+> engine — ready the moment the account verification clears.
 
-> The 3 AM problem is easy: Delhi schools already call off class reactively,
-> in the middle of the day, one school at a time. The problem is the **6 AM
-> decision** — before the first symptom. FirstLight makes it *before anyone has
-> to*, with receipts.
+[![Python](https://img.shields.io/badge/python-3.13-3776ab)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/tests-102%20passed-2eb872)](scripts/gate.ps1)
+[![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
+
+**Console:** `py -m firstlight.cli serve` → <http://127.0.0.1:8000> · **Demo film:** [docs/demo-script.md](docs/demo-script.md) · **Architecture:** [docs/architecture.md](docs/architecture.md) (Mermaid) · **AuthZ engine:** [AWS Cedar policies](firstlight/auth/cedar/policies.cedar) · **Try it locally:** `py -m firstlight.cli seed && py -m firstlight.cli serve`
+
+Every winter, NCR children lose school days to closures nobody decided — a
+cloud of stubble smoke arrives overnight, a principal wakes up confused, and
+the class call is made in a panic, one school at a time, hours too late.
+FirstLight is the call made *by the rules* at 6 AM: it reads 7 CPCB stations,
+7 Punjab/Haryana stubble fires and 7 prior mornings on **2026-10-08**, and a
+deterministic engine answers for each school — **GREEN, PROTECTED or CLOSED** —
+from the AQI bands and GRAP stages the authorities already published. An
+agent narrates that verdict in plain words (or Hinglish), explains *why* with
+the exact rule that fired, and only sends the parent alert after **you confirm
+in your own transcript**. Every decision lands in a tamper-evident ledger, and
+every alert carries an HMAC certificate you can verify later, offline.
+
+Built solo for the AWS *First Commit* hackathon. Everything below is live code
+with tests, not a slide.
+
+## Try it in two minutes, no AWS account
+
+```powershell
+py -m firstlight.cli seed    # build the local sqlite from the frozen 2026-10-08 morning
+py -m firstlight.cli serve   # FastAPI on http://127.0.0.1:8000 (auto-seeds if empty)
+```
+
+Open <http://127.0.0.1:8000>, **issue a token** (pick `officer`), **list
+schools**, **run morning**, then talk to the agent: *is today safe for
+school?* → *why?* → *would you send it if the air got worse?* (nothing is sent
+— that was a question) → *yes, send it* (signed certificate + alert) → **verify
+ledger**. Every verdict, consent decision and tamper check you see is the
+production code path against a real SQLite file — only the air data is frozen,
+so the film can be re-recorded forever and the answers never change.
 
 ---
 
-## What runs
+## What it does, in one morning
+
+```
+06:00 · FastAPI POST /api/morning/run (officer role)   ingest the frozen snapshot
+        │  + interpolate AQI        IDW from the 4 nearest stations (≤ 40 km)
+        │  + stubble plume          wind 310°/16 kmh · alignment + reach
+        │  + 7-day trend            median baseline · Δ and Δfrac, then rising/stable/improving
+        ▼
+        rule engine · data-driven DSL (7 rules, CPCB bands, GRAP stages,
+        plume, sensitivity bonus) · per school: GREEN / PROTECTED / CLOSED
+        ▼
+        SQLite (WAL)  → decisions · history_aqi · alerts  (idempotent per school per date)
+        ▼
+        hash-chained ledger  → decision/alert/cert rows; verify() must pass to be shown
+        ▼
+   you, in the console ◀──── FastAPI POST /api/agent/talk   (consent gate)
+        "is today safe for school?"  → status, band, GRAP, upwind fires, trend
+        "why?"                       → the exact rules that fired, verbatim
+        "yes, send it"               → HMAC-signed certificate + notifier dispatch
+        ▼
+        notifier (console / silent / SMTP / webhook) → parent + principal + ward office
+```
+
+The same morning, one hour later, is decisionally identical: the engine is
+deterministic, and `run_morning` is idempotent. The AI narrates the engine; it
+never manufactures a number.
+
+## Where AWS fits
+
+| Service / AWS open source | Role | Where |
+|---|---|---|
+| **AWS Cedar** (AWS OSS) | the authorization engine: allow/forbid matrix for parent/principal/officer | [`auth/cedar/policies.cedar`](firstlight/auth/cedar/policies.cedar), mirrored by `auth/roles.py` |
+| **Powertools for AWS Lambda** (AWS OSS) | optional tracing/routing on the Ship It functions | `pyproject.toml` `[aws]` extra, `sam/handlers/` |
+| **Amazon Cognito** | the roles as real identity (parent/principal/officer) in the twin | `sam/template.yaml` |
+| **Amazon API Gateway** | the twin's authorized API | `sam/template.yaml` |
+| **Amazon DynamoDB** | decisions + alerts store in the twin (mirror of SQLite tables) | `sam/handlers/shared.py` |
+| **AWS Lambda** | morning / status / talk functions in the twin | `sam/handlers/` |
+| **AWS Serverless Application Model** | the whole Ship It definition | [`sam/template.yaml`](sam/template.yaml) |
+| **FastAPI + SQLite (Build It)** | the demoable local product, zero cloud | `firstlight/api/`, `firstlight/storage/` |
+| **SNS / webhook / SMTP** | alert delivery channels (hook is used by the twin) | `firstlight/notifier/`, `sam/handlers/shared.py` |
+
+## Safety model (the part that matters)
+
+Auto-decided school closures are only worth shipping if they cannot do the
+wrong thing. FirstLight's controls are in code and tests, not in a prompt:
+
+1. **The engine decides.** `decide_school` returns a level from the AQI/band/
+   GRAP/plume tables. There is **no code path** where a model, prompt or coin
+   toss produces a verdict; the agent only converts `Decision` to speech.
+2. **Consent is checked against your transcript, never the model's claim.**
+   `consent_turn` reads the raw text of the current turn; sending requires the
+   send intent **and** an explicit confirmation phrase (`yes, send it`, `bhejo`)
+   in *that same turn*. A question — *"would you send it?"* — never sends.
+3. **Roles are one-directional.** A parent can read status and ask questions;
+   only a principal can `alert:send`; only an officer can `run:morning` or
+   read the ledger. Forbidden by default; tested per endpoint.
+4. **Every fact is chained.** The ledger is append-only and hash-chained
+   (SHA-256). An offline edit breaks `verify()` and the day stops being shown
+   as authentic — edits are *detectable*, not silent.
+5. **Every alert is signed.** Alerts carry an HMAC-signed certificate over the
+   canonical decision JSON, so a judge can verify one later with a one-liner.
+6. **Deterministic and idempotent.** The same inputs give the same verdict a
+   hundred times; replaying the morning does not duplicate decisions.
+7. **Fail-closed by default.** Published endpoints 401 without a token, 403 on
+   the wrong role, 404 for unknown schools; unknown agent turns return the
+   status narration, never an invented answer.
+8. **Tests assert the safety model.** `tests/test_agent.py` proves the consent
+   gate, `tests/test_ledger.py` proves tamper detection, `tests/test_api.py`
+   proves role enforcement on live endpoints.
+
+Details: [`tests/`](tests/) and [`docs/architecture.md`](docs/architecture.md).
+
+## Run it
+
+### Locally, no AWS account (the *Build It* path)
+
+```powershell
+git clone https://github.com/ionfwsrijan/FirstLight && cd firstlight
+py -m pip install -e ".[test]"     # fastapi, uvicorn, pydantic, httpx
+py -m firstlight.cli gate          # 102 tests
+py -m firstlight.cli seed          # build the local sqlite (or let the server auto-seed)
+py -m firstlight.cli serve         # http://127.0.0.1:8000
+```
+
+Needs Python 3.11+. No Docker, no AWS credentials, no npm. `scripts/run.ps1`
+and `scripts/gate.ps1` wrap the two common commands.
+
+### On AWS (the *Ship It* path)
+
+```powershell
+.\sam\build-layer.ps1                      # package the pure-Python core into a Lambda layer
+sam validate -t sam\template.yaml          # valid today, before the account even clears
+sam build --template sam\template.yaml
+sam deploy --guided --capabilities CAPABILITY_IAM
+```
+
+Then the same flow against the deployed URL:
+
+```text
+POST <ApiUrl>/morning            → 7 schools, identical verdicts to local
+GET  <ApiUrl>/status?schoolId=s-avini
+POST <ApiUrl>/talk  {"text":"yes, send it","school_id":"s-avini"}
+```
+
+New AWS accounts sit under a verification hold for a while — that is exactly
+why this project's primary path is Build It: nothing in the demo makes a
+network call. Full runbook: [`sam/README.md`](sam/README.md).
+
+## Repository map
 
 ```
 firstlight/
-  pyproject.toml               runtime deps (fastapi, uvicorn, pydantic)
-  firstlight/
-    config.py                  env-overridable settings (secret, db, web, notify…)
-    domain/                    Level/Trend/Station/School/StubbleFire/Wind/Decision
-    engine/
-      bands.py                 CPCB AQI bands + GRAP stages          [deterministic]
-      bands + policy catalog   the 7 rule decision hierarchy
-      geometry.py              haversine, bearing, wind alignment
-      interpolation.py         IDW AQI from the 4 nearest stations (≤40 km)
-      plume.py                 stubble-fire plume model (reach, alignment)
-      trend.py                 7-day rising/falling baseline
-      policy.py + dsl/          data-driven custom rule DSL + catalog
-    ledgers→ledger/store.py      hash-chained append-only event ledger + verify()
-    auth/                      role matrix (parent/principal/officer), HMAC tokens
-      auth/cedar/policies.cedar  AWS Cedar policies (the "Built on AWS" beat)
-    agent/                     intents (en + Hindi/Hinglish), narrator,
-      consent.py               consent gate ("yes, send it" in the same turn),
-      certificate.py           HMAC-signed, verifiable decision certificates
-    storage/                   SQLite schema + repositories (WAL)
-    pipeline/                  frozen 2026-10-08 scenario + run_morning
-    notifier/                  console / silent / SMTP / webhook
-    api/                       FastAPI: /api/health, /morning/*, /agent/talk,
-                               /ledger*, /auth/issue, / (web console)
-    cli/                       serve · seed · gate
-  web/index.html               the console (no build step, no npm)
-  sam/                         Ship It twin: template.yaml, handlers, Cedar notes
-  tests/                       102 tests, green, zero network calls
-  scripts/                     run.ps1 (serve) · gate.ps1 (suite)
+  config.py            env-overridable settings (secret, db path, web dir, notify…)
+  domain/              Level/Trend, Station, School, StubbleFire, Wind, inputs, RuleHit, Decision
+  engine/              CPCB bands + GRAP stages, haversine/bearing, IDW interpolation,
+                       stubble-plume model, 7-day trend, decision orchestration
+  dsl/                 data-driven rule chain evaluated like a tiny language (7 rules)
+  ledger/store.py      append-only hash-chained event ledger + verify()
+  auth/                HMAC capability tokens, role matrix, AWS Cedar policies
+  agent/               intents (en + Hindi/Hinglish), narrator, consent gate, certificate signing
+  notifier/            console / silent / SMTP / webhook dispatch abstraction
+  storage/             SQLite schema (WAL) + repositories: stations, schools, fires, history, decisions, alerts
+  pipeline/            frozen 2026-10-08 scenario + run_morning orchestration
+  api/                 FastAPI: /api/health, /api/morning/run, /api/agent/talk, /api/ledger*, /api/auth/issue, /
+  cli/                 serve · seed · gate
+web/index.html         the console (no build step, no npm)
+sam/                   Ship It twin: template.yaml, Lambda handlers, DynamoDB mirror, core layer
+tests/                 102 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+                       auth + Cedar, intents + consent, certificates, pipeline, API roles, SAM mirror
+scripts/               run.ps1 · gate.ps1
+docs/                  architecture.md (Mermaid) · demo-script.md (the film, shot by shot)
 ```
 
-## Why it wins on the judging sheet
+## Development
 
-| Criterion | How FirstLight answers |
+```powershell
+py -m firstlight.cli gate    # the whole suite; exit code gates the commit
+py -m firstlight.cli seed    # rebuild the local database from the frozen morning
+py -m firstlight.cli serve   # the API + console
+```
+
+Tests are the spec. The safety model is asserted from the same code that runs
+(`tests/test_agent.py`, `tests/test_ledger.py`), the roles from live endpoints
+(`tests/test_api.py`), and the Ship It twin from the same files the layers
+ship (`tests/test_sam_mirror.py` — cloud verdicts must equal local verdicts).
+
+## Production notes
+
+What "production shape" means here, and where each claim is enforced:
+
+| Concern | Where |
 |---|---|
-| **Idea & Impact** | Every NCR child loses school days each winter to reactive, uncoordinated closures. FirstLight turns a chaotic 6 AM scramble into one rule-decided answer with receipts. |
-| **Built on AWS** | **Build It** — the product is a real, runnable, fully-tested local stack using AWS **Cedar** (a genuine AWS OSS project) for authorization, with a complete **Ship It SAM twin** (Lambda + DynamoDB + Cognito + API Gateway) that runs the *same* engine. Nothing needs a live account to demo; deployment is one command away. |
-| **Design & usability** | A three-word flow — **status, why, send it** — a real parent can use in Hinglish. The web console mirrors the phone call exactly. |
-| **Execution** | One deterministic feature runs and is tested: the decision engine, its persistence, its ledger, its auth, and its **consent-gated send** — 102 tests when you gate. |
-| **Cost & realism** | Uses free, verifiable gov data shapes (CPCB AQI, GRAP, NASA FIRMS stubble fires); zero cloud bills in demo; signed receipts give the demo a paper trail judges can hold. |
+| Secrets are injectable, never hard-required: `FIRSTLIGHT_SECRET` (dev default only), DB path, notify channel, SMTP creds, webhook URL | `firstlight/config.py` |
+| SQLite runs in WAL mode, foreign keys on, schema idempotent; the ledger table is created with the schema, so a fresh boot is always verify-true | `storage/db.py` |
+| Token expiry and role are verified on every call; `_require` enforces the action matrix, tests cover 401/403/404 | `auth/tokens.py`, `api/__init__.py`, `tests/test_api.py` |
+| Notifier failures are logged and never take the morning down (SMTP/webhook return a receipt or a `-failed` string) | `notifier/__init__.py` |
+| The morning is idempotent per school+date (upsert), and the whole thing is committed atomically after the ledger append | `pipeline/morning.py`, `storage/repositories.py` |
+| Determinism is a test: repeated runs produce byte-identical decision payloads | `tests/test_engine.py`, `tests/test_pipeline.py` |
+| The demo console serves from the same FastAPI process, no separate build | `api/__init__.py` `/`, `web/index.html` |
 
-## The two hard rules of the AI
+Known gaps, on purpose for a hackathon: a dev-only default secret instead of a
+real secret manager (inject it in prod), a frozen scenario instead of a live
+CPCB/FIRMS feed (the ingest interface is the same dict shape), and the Ship It
+twin is un-deployed because the AWS account is under verification — hence Build
+It as the demoable path, with the twin `sam validate`-clean.
 
-1. **The engine decides.** `decide_school()` returns a level from the
-   AQI/band/GRAP/plume tables. The agent converts it to speech. **There is no
-   code path where the model chooses a verdict.**
-2. **No action without consent.** Sending alerts requires the send intent
-   **and an explicit confirmation phrase in the same turn** (`sent it`, `yes`).
-   A question — *"would you send it?"* — never sends. Both rules are unit-tested.
+## Charts
 
-```
-> good morning — is today safe for school?
-  Ramjas P. Block, Ashok Vihar: AQI 442 (Severe), GRAP Stage 3, 6 upwind
-  stubble fires, rising. CLOSED — classes move online.
-> why?
-  AQI >= 401 (Severe band) → CLOSED; AQI >= 301 with an active stubble plume → CLOSED.
-> what do we do
-  Declare online day · cancel outdoor PE · notify parents by 7:00 · re-evaluate at 12:00
-> would you send it if the air got worse?
-  (the agent does NOT send — that was a question)
-> yes, send it
-  Done. Alert raised for s-avini, certificate FIRSTLIGHT-s-avini-0001, chained to the ledger.
-```
-
-## Run it (Build It — no AWS account, no card)
-
-```powershell
-py -m firstlight.cli gate            # 102 tests
-py -m firstlight.cli seed            # build the local sqlite from the frozen morning
-py -m firstlight.cli serve           # FastAPI on http://127.0.0.1:8000 (auto-seeds if empty)
-# open http://127.0.0.1:8000  →  the FirstLight console
-```
-
-Console flow: **issue a token** (pick `officer`) → **list schools** → **run
-morning** → ask the agent anything → try *"would you send it…?"* (no send)
-then *"yes, send it"* (signed + sent) → **verify ledger**.
-
-## Ship It twin (`sam/`)
-
-`sam/template.yaml` builds: Cognito user pool (parent/principal/officer) ·
-5-minute-api authorizer · DynamoDB decisions/alerts · 3 Lambdas · a `firstlight`
-core **layer** so the cloud verdict is byte-identical to the local verdict.
-`sam/build-layer.ps1` packages the core; `sam/README.md` has the deploy
-commands. Authorization mirrors `firstlight/auth/cedar/policies.cedar`.
-
-```powershell
-.\sam\build-layer.ps1
-sam validate -t sam\template.yaml     # valid today, before the account even clears
-```
-
-## Data honesty
-
-`pipeline/scenario.py` ships a frozen representative morning
-(7 NCR stations, 7 real-placed Delhi schools, 7 Punjab/Haryana stubble fires,
-7 prior mornings of history) so every run is reproducible and every test is a
-fact-check, not a fish. The real CPCB AQI feed and NASA FIRMS fire feed are
-the documented next ingest; the repositories already consume the same dict
-shapes.
-
-## Tests
-
-102 tests across: bands/GRAP thresholds, geometry, IDW interpolation, plume
-model, trend, the rule DSL, ledger tamper-detection, HMAC tokens + role
-matrix, Cedar policy presence, intents + consent gate, certificates, the full
-morning pipeline, every API endpoint with role enforcement, and a Ship It
-mirror test stubbing boto3.
+- **Architecture** (Mermaid): [`docs/architecture.md`](docs/architecture.md)
+- **Demo film script** (shot by shot): [`docs/demo-script.md`](docs/demo-script.md)
