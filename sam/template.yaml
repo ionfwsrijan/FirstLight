@@ -72,8 +72,9 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref FirstLightUserPool
+      ClientName: firstlight-console
       GenerateSecret: false
-      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH, ALLOW_ADMIN_USER_PASSWORD_AUTH]
 
   # ---- The core decision layer (pure Python, shared with local build) ----
   FirstLightCoreLayer:
@@ -132,6 +133,48 @@ Resources:
             RestApiId: !Ref FirstLightApi
             Auth:
               Authorizer: FirstLightAuthorizer
+
+  # ---- The browser console (public static page, Cognito-backed login) ----
+  UiHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: static/
+      Handler: index.handler
+      Timeout: 10
+      MemorySize: 128
+      Policies: [AWSLambdaBasicExecutionRole]
+      Events:
+        Root:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+            Auth:
+              Authorizer: NONE
+
+  # ---- Public login: issues a Cognito token for the console like the local one ----
+  LoginHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: login.handler
+      Timeout: 10
+      MemorySize: 128
+      Policies: [AWSLambdaBasicExecutionRole, AmazonCognitoPowerUser]
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref FirstLightUserPool
+          USER_POOL_CLIENT_ID: !Ref FirstLightUserPoolClient
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: POST
+            RestApiId: !Ref FirstLightApi
+            Auth:
+              Authorizer: NONE
 
   # ---- AuthN/AuthZ resource ----
   FirstLightAuthorizer:

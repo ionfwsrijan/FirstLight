@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FirstLight · Ship It console</title>
+<style>
+:root{--bg:#F6F8FC;--surface:#FFFFFF;--surface2:#F1F5FB;--line:#E3EAF5;--text:#0B2B4C;--muted:#6B7A93;--faint:#94A3B8;--brand:#2E6BFF;--good:#23A55A;--warn:#E79B23;--bad:#E54848;--r:12px;--shadow:0 1px 2px rgba(11,43,76,.06),0 8px 24px rgba(11,43,76,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:14px/1.5 -apple-system,"Segoe UI",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:16px;letter-spacing:-.01em}
+.brand span{color:var(--brand)}
+.chip{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:var(--brand);color:#fff}
+.chip.gray{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.spacer{flex:1}
+main{max-width:960px;margin:26px auto;padding:0 20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px}
+h2{font-size:15px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+button{cursor:pointer;border:0;border-radius:9px;font-weight:700;font-size:13px;padding:9px 16px;background:var(--brand);color:#fff;transition:filter .12s}
+button:hover{filter:brightness(1.06)}
+button.ghost{background:var(--surface2);color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.55;cursor:not-allowed}
+input{padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;width:100%}
+input:focus{outline:2px solid rgba(46,107,255,.25)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase}
+.tag.good{background:rgba(35,165,90,.12);color:var(--good)}
+.tag.warn{background:rgba(231,155,35,.14);color:#A96B12}
+.tag.bad{background:rgba(229,72,72,.12);color:var(--bad)}
+.tag.blue{background:rgba(46,107,255,.12);color:var(--brand)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px}
+.school{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:14px}
+.school b{font-size:13px}
+.school .meta{color:var(--muted);font-size:12px;margin-top:3px}
+.school .foot{display:flex;align-items:center;gap:8px;margin-top:10px}
+.ca{color:var(--muted);font-size:11.5px;margin-top:6px}
+.alert{border-left:3px solid var(--brand);background:var(--surface2);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12.5px}
+.alert .r{color:var(--faint);font-size:11.5px;margin-top:4px;word-break:break-all}
+.hidden{display:none}
+.hero{max-width:420px;margin:8vh auto 0;text-align:center}
+.hero .logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#2E6BFF,#3F9DFF);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff}
+.hero p{color:var(--muted);font-size:13px;margin:8px 0 20px}
+.accounts{margin-top:22px;text-align:left;border-top:1px solid var(--line);padding-top:14px;font-size:12px;color:var(--muted)}
+.accounts code{background:var(--surface2);padding:1px 6px;border-radius:6px;font-size:11px}
+.chat{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.msg{background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:13px;white-space:pre-wrap}
+.msg.me{background:rgba(46,107,255,.08);align-self:flex-end;max-width:80%}
+.msg .who{font-size:10.5px;font-weight:800;color:var(--faint);margin-bottom:3px}
+.sendbar{display:flex;gap:8px;margin-top:12px}
+a.plain{color:var(--brand);text-decoration:none;font-weight:700}
+code.hl{background:var(--surface2);padding:2px 6px;border-radius:6px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">FirstLight <span>●</span> Ship It</div>
+  <span class="chip">AWS LIVE</span>
+  <span class="chip gray">Cognito · Lambda · DynamoDB</span>
+  <span class="chip gray" id="rulesetChip"></span>
+  <span class="spacer"></span>
+  <div id="authArea"></div>
+</header>
+
+<main>
+  <div class="hero" id="loginView">
+    <div class="logo">A</div>
+    <h2>FirstLight cloud console</h2>
+    <p>The 6 AM on-call agent for the air a child breathes — running in AWS.
+    Sign in with one of the demo accounts below (Cognito handles the passwords).</p>
+    <form id="loginForm" style="text-align:left">
+      <label style="font-size:12.5px;color:var(--muted);display:block;margin:12px 0 4px">Username</label>
+      <input id="loginUser" autocomplete="username" placeholder="principal@firstlight.demo"/>
+      <label style="font-size:12.5px;color:var(--muted);display:block;margin:10px 0 4px">Password</label>
+      <input id="loginPass" type="password" autocomplete="current-password"/>
+      <div class="ca" id="loginMsg" style="color:var(--bad)"></div>
+      <button style="width:100%;margin-top:8px" id="loginBtn">Sign in</button>
+    </form>
+    <div class="accounts">
+      <div>Demo accounts (same personas as the local build):</div>
+      <div style="margin-top:6px"><code>parent@firstlight.demo</code> · Parent12345 — Meera, can ask, cannot send.</div>
+      <div><code>principal@firstlight.demo</code> · Principal123 — Mr.&nbsp;Rao, can send.</div>
+      <div><code>officer@firstlight.demo</code> · Officer1234 — Kapoor, can send + run the morning.</div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="appView">
+    <div class="row" style="gap:8px">
+      <h2 style="margin-bottom:0">FirstLight cloud console</h2>
+      <span class="tag blue" id="roleTag">…</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="row" style="margin-top:14px;gap:8px">
+      <button id="tabMorning">Run the morning</button>
+      <button class="ghost" id="tabAgent">Agent</button>
+      <button class="ghost" id="tabStatus">School status</button>
+    </div>
+
+    <section id="viewMorning">
+      <div class="sub" style="margin-top:12px">Frozen 2026-10-08 scenario, decided by the same deterministic engine as the local build — verdicts are byte-identical.</div>
+      <div class="row">
+        <button id="runMorning">Run morning → decide all 7 schools</button>
+        <span id="morningStatus" style="font-size:12.5px;color:var(--muted)"></span>
+      </div>
+      <div class="grid" id="decisions"></div>
+      <div style="margin-top:18px"><b style="font-size:13px">Alert receipts</b></div>
+      <div id="alerts"></div>
+    </section>
+
+    <section id="viewAgent" class="hidden">
+      <div class="sub" style="margin-top:12px">Ask the same 6 AM agent. A question (“would you send it?”) never sends; an explicit “yes, send it” dispatches with a signed receipt.</div>
+      <div class="chat" id="chatLog"></div>
+      <div class="row" style="margin-top:12px;gap:8px">
+        <label style="font-size:12.5px;color:var(--muted)">School
+          <select id="genSchool"></select>
+        </label>
+      </div>
+      <div class="sendbar">
+        <input id="talkInput" placeholder="is today safe for school?  ·  why?  ·  yes, send it"/>
+        <button id="talkSend">Ask</button>
+      </div>
+    </section>
+
+    <section id="viewStatus" class="hidden">
+      <div class="sub" style="margin-top:12px">Latest persisted decision per school from DynamoDB.</div>
+      <div class="grid" id="statusGrid"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const API_BASE="__API_BASE__";
+const SCHOOLS=[
+ {id:"s-avini",name:"Ramjas P. Block, Ashok Vihar"},
+ {id:"s-apj",name:"CPM Public School, Pusa Road"},
+ {id:"s-dwarka",name:"DPS, Dwarka Sector 12"},
+ {id:"s-guard",name:"GGSSS, ITO Crossing"},
+ {id:"s-gurugram",name:"St. Andrews, Gurugram"},
+ {id:"s-noida",name:"Pearl Academy, Noida"},
+ {id:"s-spring",name:"Spring Meadow, Shadipur"}
+];
+const $=s=>document.querySelector(s);
+const byId=Object.fromEntries(SCHOOLS.map(s=>[s.id,s.name]));
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const levelTag=l=>l==="CLOSED"?'<span class="tag bad">CLOSED</span>':l==="PROTECTED"?'<span class="tag warn">PROTECTED</span>':'<span class="tag good">SAFE</span>';
+function parseJwt(t){const p=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(decodeURIComponent(escape(atob(p+"=".repeat((4-p.length%4)%4)))))}
+function token(){return sessionStorage.getItem("id_token")}
+function claims(){const t=token();return t?parseJwt(t):null}
+function roleOf(c){const e=(c.email||"").split("@")[0]||"";return e==="principal"?"principal":e==="officer"?"officer":"parent"}
+async function login(){
+ const u=$("#loginUser").value.trim(), p=$("#loginPass").value;
+ const btn=$("#loginBtn");btn.disabled=true;$("#loginMsg").textContent="";
+ try{
+  const r=await fetch(API_BASE+"/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
+  const j=await r.json().catch(()=>null);
+  if(!r.ok)throw new Error((j&&j.error)||("HTTP "+r.status));
+  sessionStorage.setItem("id_token",j.token);location.reload();
+ }catch(e){$("#loginMsg").textContent=e.message}finally{btn.disabled=false}
+}
+
+async function api(path,method,body){
+ const r=await fetch(API_BASE+path,{method:method||"GET",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token()},body:body?JSON.stringify(body):undefined});
+ if(r.status===401){sessionStorage.removeItem("id_token");location.reload();throw new Error("session expired")}
+ const j=await r.json().catch(()=>null);
+ if(!r.ok)throw new Error((j&&(j.error||j.message))||"HTTP "+r.status);
+ return j;
+}
+let morningAlerts=[];
+async function runMorning(){
+ const btn=$("#runMorning");btn.disabled=true;$("#morningStatus").textContent="deciding…";
+ try{
+  const r=await api("/morning","POST",{});
+  morningAlerts=(r.alerts||[]).slice().reverse();
+  $("#morningStatus").textContent=`${r.decisions.length} decisions · ${r.alerts.length} alerts · by ${r.by.slice(0,8)}`;
+  $("#decisions").innerHTML=r.decisions.map(d=>`<div class="school"><div class="row" style="gap:6px"><b>${esc(byId[d.schoolId]||d.schoolId)}</b>${levelTag(d.levelName)}</div><div class="meta">${esc(d.bandLabel)} · AQI ${esc(d.aqiEffective)} · GRAP ${d.grapStage} · plume ${d.plumeScore}/3 · ${esc(d.trend)}</div><div class="ca">${esc((d.reasons||[]).filter(x=>x.applied).slice(0,3).map(x=>x.ruleId).join(" · "))}</div></div>`).join("");
+  renderAlerts();
+ }catch(e){$("#morningStatus").textContent=e.message}finally{btn.disabled=false}
+}
+function renderAlerts(){$("#alerts").innerHTML=morningAlerts.map(a=>`<div class="alert">${levelTag(a.level)} ${esc(byId[a.schoolId]||a.schoolId)}<div class="r">receipt ${esc(a.receipt||"—")}</div></div>`).join("")||'<div class="ca">Run the morning first.</div>'}
+async function talk(text){
+ const log=$("#chatLog");
+ log.insertAdjacentHTML("beforeend",`<div class="msg me"><div class="who">you</div>${esc(text)}</div>`);
+ const r=await api("/talk","POST",{text: text, school_id:$("#genSchool").value});
+ const c=r.consent||{};
+ const tag=c.maySend&&c.authorized===false?'<span class="tag warn">role cannot send</span>':c.maySend?'<span class="tag good">certified send ✓</span>':c.asked&&!c.confirmed?'<span class="tag blue">awaiting confirmation</span>':c.pendingSend?'<span class="tag warn">send armed</span>':'<span class="tag bad">no-send</span>';
+ let extra="";
+ if(r.sent&&r.sent.delivery)extra=`<div class="r">${tag} delivered via <b>${esc(r.sent.delivery.channel)}</b> → receipt <b>${esc(r.sent.delivery.receipt)}</b></div>`;
+ else if(r.consent&&(r.consent.maySend!==undefined))extra=`<div class="r">${tag} intent ${esc(r.intent)}</div>`;
+ log.insertAdjacentHTML("beforeend",`<div class="msg"><div class="who">firstlight agent</div>${esc(r.reply)}${extra}</div>`);
+ log.scrollTop=log.scrollHeight;
+}
+async function renderStatus(){
+ $("#statusGrid").innerHTML=SCHOOLS.map(s=>`<div class="school" id="st-${s.id}"><b>${esc(s.name)}</b><div class="meta">${esc(s.id)} · loading…</div></div>`).join("");
+ for(const s of SCHOOLS){
+  try{const r=await api("/status?schoolId="+s.id);
+   const el=$("#st-"+s.id);const d=r.decision;
+   el.innerHTML=`<b>${esc(s.name)}</b>${levelTag(d.levelName)}<div class="meta">${esc(d.bandLabel)} · AQI ${esc(d.aqiEffective)} · GRAP ${d.grapStage}</div><div class="ca">plume ${d.plumeScore}/3 · ${esc(d.trend)}</div>`;
+  }catch(e){const el=$("#st-"+s.id);if(el)el.innerHTML=`<b>${esc(s.name)}</b><div class="meta">error: ${esc(e.message)}</div>`}
+ }
+}
+function show(v){
+ for(const k of["viewMorning","viewAgent","viewStatus"])$("#"+k).classList.toggle("hidden",k!==v);
+ $("#tabMorning").classList.toggle("ghost",v!=="viewMorning");
+ $("#tabAgent").classList.toggle("ghost",v!=="viewAgent");
+ $("#tabStatus").classList.toggle("ghost",v!=="viewStatus");
+}
+function boot(){
+ if(token()){
+  $("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");
+  const c=claims();const role=roleOf(c);
+  $("#roleTag").textContent=role+" · "+c.email;
+  $("#authArea").innerHTML=`<span class="chip gray">${esc(c.email)}</span> <a class="chip gray" style="text-decoration:none" href="#" id="signOut">sign out</a>`;
+  $("#signOut").onclick=e=>{e.preventDefault();sessionStorage.removeItem("id_token");location.reload()};
+  $("#loginForm").onsubmit=e=>{e.preventDefault();login();};
+   $("#tabMorning").disabled=false;
+  $("#runMorning").onclick=runMorning;
+  $("#genSchool").innerHTML=SCHOOLS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  $("#talkSend").onclick=async()=>{const t=$("#talkInput").value.trim();if(!t)return;try{await talk(t);$("#talkInput").value=""}catch(e){const l=$("#chatLog");l.insertAdjacentHTML("beforeend",`<div class="msg"><div class="who">error</div>${esc(e.message)}</div>`);}};
+  $("#talkInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("#talkSend").click()});
+  $("#tabMorning").onclick=()=>show("viewMorning");$("#tabAgent").onclick=()=>show("viewAgent");$("#tabStatus").onclick=()=>{show("viewStatus");renderStatus()};
+}
+}
+boot();
+</script>
+</body>
+</html>
