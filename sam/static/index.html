@@ -206,13 +206,13 @@ function show(v){
  $("#tabStatus").classList.toggle("ghost",v!=="viewStatus");
 }
 function boot(){
+ $("#loginForm").onsubmit=e=>{e.preventDefault();login();};
  if(token()){
   $("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");
   const c=claims();const role=roleOf(c);
   $("#roleTag").textContent=role+" · "+c.email;
   $("#authArea").innerHTML=`<span class="chip gray">${esc(c.email)}</span> <a class="chip gray" style="text-decoration:none" href="#" id="signOut">sign out</a>`;
   $("#signOut").onclick=e=>{e.preventDefault();sessionStorage.removeItem("id_token");location.reload()};
-  $("#loginForm").onsubmit=e=>{e.preventDefault();login();};
    $("#tabMorning").disabled=false;
   $("#runMorning").onclick=runMorning;
   $("#genSchool").innerHTML=SCHOOLS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");

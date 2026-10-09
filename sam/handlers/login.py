@@ -34,6 +34,17 @@ def _role(token: dict) -> str:
     return _ROLES.get(email, "viewer")
 
 
+def _roles_for(username: str) -> str:
+    # Login accepts the Cognito username (meera/rao/kapoor) OR the demo email,
+    # so mis-typing "officer@firstlight.demo" still lands on the kapoor account.
+    _EMAIL_TO_USER = {
+        "parent@firstlight.demo": "meera",
+        "principal@firstlight.demo": "rao",
+        "officer@firstlight.demo": "kapoor",
+    }
+    return _EMAIL_TO_USER.get((username or "").strip().lower())
+
+
 def handler(event: dict, _context) -> dict:
     body = parse_body(event)
     username = str(body.get("username", "")).strip()
@@ -41,26 +52,30 @@ def handler(event: dict, _context) -> dict:
     if not username or not password:
         return respond(400, {"error": "username and password are required"})
 
-    try:
-        result = boto3.client("cognito-idp", region_name=os.environ["AWS_REGION"]).admin_initiate_auth(
-            UserPoolId=os.environ["USER_POOL_ID"],
-            ClientId=os.environ["USER_POOL_CLIENT_ID"],
-            AuthFlow="ADMIN_USER_PASSWORD_AUTH",
-            AuthParameters={"USERNAME": username, "PASSWORD": password},
-        )
-    except Exception as exc:  # boto3 exceptions vary by SDK version
-        code = getattr(exc, "response", {}).get("Error", {}).get("Code", "")
-        if code in ("NotAuthorizedException", "UserNotFoundException", "InvalidParameterException"):
-            return respond(401, {"error": "invalid credentials"})
-        return respond(500, {"error": "login unavailable", "detail": code})
+    client = boto3.client("cognito-idp", region_name=os.environ["AWS_REGION"])
+    token = None
+    attempts = [username] + ([_roles_for(username)] if _roles_for(username) else [])
+    for uname in attempts:
+        try:
+            result = client.admin_initiate_auth(
+                UserPoolId=os.environ["USER_POOL_ID"],
+                ClientId=os.environ["USER_POOL_CLIENT_ID"],
+                AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+                AuthParameters={"USERNAME": uname, "PASSWORD": password},
+            )
+            token = (result.get("AuthenticationResult") or {}).get("IdToken", "")
+            if token:
+                break
+        except Exception as exc:  # boto3 exceptions vary by SDK version
+            code = getattr(exc, "response", {}).get("Error", {}).get("Code", "")
+            if code not in ("NotAuthorizedException", "UserNotFoundException", "InvalidParameterException"):
+                return respond(500, {"error": "login unavailable", "detail": code})
 
-    tokens = result.get("AuthenticationResult", {})
-    id_token = tokens.get("IdToken", "")
-    if not id_token:
-        return respond(401, {"error": "no id token issued"})
+    if not token:
+        return respond(401, {"error": "invalid credentials"})
 
     # The JWT payload is what the API authorizer validates; re-decode cheaply here.
-    claims = id_token.split(".")[1]
+    claims = token.split(".")[1]
     claims += "=" * (-len(claims) % 4)
     try:
         import base64
@@ -71,5 +86,6 @@ def handler(event: dict, _context) -> dict:
 
     return respond(
         200,
-        {"token": id_token, "role": _role(user), "user": user.get("cognito:username", username)},
+        {"token": token, "role": _role(user),
+         "user": user.get("cognito:username", username)},
     )
