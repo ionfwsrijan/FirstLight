@@ -70,15 +70,15 @@ def evaluate(rules: tuple[Rule, ...], features: dict, sensitive_bonus: float = 0
         except Exception:  # predicate errors must never crash a morning
             matched = False
         if matched:
-            hits.append(RuleHit(r.id, r.title, r.detail, True))
+            hits.append(RuleHit(r.id, r.title, r.detail, True, value=r.level))
             if not decided_found and r.priority < max_priority_matched:
                 decided = r.level
                 max_priority_matched = r.priority
                 decided_found = True
         else:
-            hits.append(RuleHit(r.id, r.title, r.detail, False))
+            hits.append(RuleHit(r.id, r.title, r.detail, False, value=r.level))
     if not decided_found:
         # Safety default: never silent. Without a match, PROTECTED is prudent.
         decided = Level.PROTECTED
-        hits.append(RuleHit("DEFAULT", "default-protective", "No rule matched; protective default applied.", True))
+        hits.append(RuleHit("DEFAULT", "default-protective", "No rule matched; protective default applied.", True, value=Level.PROTECTED))
     return hits, decided

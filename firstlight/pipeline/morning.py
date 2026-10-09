@@ -75,11 +75,25 @@ def run_morning(conn: sqlite3.Connection, cfg: Settings, inputs: MorningInputs, 
         if should_alert:
             message = narrate(next(s for s in inputs.schools if s.id == d.school_id), d)
             receipt = notifier.notify(school_id=d.school_id, level=d.level.name_short, message=message)
+            channel = cfg.notify_channel
             alert_id = alerts_repo.save_alert(
-                d.school_id, d.date, int(d.level), d.level.name_short, message, as_user, cert
+                d.school_id, d.date, int(d.level), d.level.name_short, message, as_user, cert,
+                channel=channel, receipt=receipt,
             )
-            ledger.append("alert", d.school_id, {"alertId": alert_id, "receipt": receipt, "cert": cert})
-            alerts.append({"alertId": alert_id, "schoolId": d.school_id, "level": d.level.name_short, "receipt": receipt})
+            ledger.append(
+                "alert",
+                d.school_id,
+                {"alertId": alert_id, "receipt": receipt, "cert": cert, "channel": channel},
+            )
+            alerts.append(
+                {
+                    "alertId": alert_id,
+                    "schoolId": d.school_id,
+                    "level": d.level.name_short,
+                    "receipt": receipt,
+                    "channel": channel,
+                }
+            )
 
     ledger.append("morning_run", inputs.date, {"asUser": as_user, "ruleset": RULESET_VERSION})
     conn.commit()

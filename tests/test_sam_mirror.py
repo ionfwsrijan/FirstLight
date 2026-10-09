@@ -73,6 +73,9 @@ class TestShipItMirror(unittest.TestCase):
         body = __import__("json").loads(response["body"])
         self.assertIsNotNone(body["sent"])
         self.assertEqual(body["sent"]["status"], "sent")
+        # Ship It mirrors delivery: a receipt/channel is attached even with no hook set
+        self.assertIn("delivery", body["sent"])
+        self.assertIn("channel", body["sent"]["delivery"])
 
     def test_unknown_school_404(self):
         event = {"body": '{"text": "hi", "school_id": "nope"}', "requestContext": {}}

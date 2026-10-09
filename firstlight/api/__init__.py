@@ -1,15 +1,20 @@
 """FastAPI application for Build It local mode.
 
 Endpoints:
-  GET  /api/health            liveness + ruleset version
-  GET  /api/morning/inputs    the frozen scenario (judge-facing)
-  POST /api/morning/run       run the deterministic morning (officer)
+  GET  /api/health            liveness + ruleset version + data provenance
+  GET  /api/morning/inputs    scenario inputs (frozen + provenance label)
+  POST /api/morning/run       run the morning on current inputs (officer)
+  POST /api/sources/refresh   explicit NASA FIRMS refresh (officer)
   GET  /api/schools           all schools
   GET  /api/decisions/{school_id}   latest decisions for a school
-  POST /api/agent/talk        one turn of the 6 AM agent (with consent)
+  POST /api/agent/talk        one turn of the 6 AM agent (consent + transcript)
+  GET  /api/transcript        persisted agent conversation (agent:talk)
+  GET  /api/outbox            delivered alerts, channel + receipt (alert:send)
   GET  /api/ledger            recent ledger rows
   GET  /api/ledger/verify     tamper check
-  POST /api/auth/issue        issue a capability token (demo creds)
+  POST /api/auth/login        seeded password login (Build It; Ship It uses Cognito)
+  POST /api/auth/issue        disabled: open role minting is closed (403)
+  GET  /api/me                current identity
 """
 
 from __future__ import annotations
@@ -24,14 +29,30 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from .. import RULESET_VERSION
-from ..agent import ConsentState, consent_turn, parse, short, sign
-from ..auth import allowed, issue, verify
+from ..agent import (
+    ConsentState,
+    actions_reply,
+    change_reply,
+    consent_turn,
+    greet_reply,
+    parse,
+    recall_reply,
+    send_armed_reply,
+    send_confirmed_reply,
+    send_denied_reply,
+    short,
+    sign,
+    status_reply,
+    why_reply,
+)
+from ..auth import allowed, authenticate, issue, seed_users, verify
 from ..config import settings
 from ..engine import decide_school
 from ..ledger import Ledger
-from ..pipeline import run_morning
-from ..pipeline.scenario import morning_inputs
-from ..storage import DecisionsRepo, SchoolsRepo, connect
+from ..notifier import build as build_notifier
+from ..pipeline import effective_inputs, run_morning
+from ..pipeline.sources import refresh as refresh_fire_source, read_status
+from ..storage import AlertsRepo, DecisionsRepo, SchoolsRepo, TranscriptRepo, UsersRepo, connect
 
 log = logging.getLogger("firstlight.api")
 
@@ -43,21 +64,25 @@ async def lifespan(_app: FastAPI):
 
         seed()
         log.info("auto-seeded %s", settings.db_path)
+    # demo accounts: idempotent upsert, so every boot restores the published creds
+    conn = connect(settings.db_path)
+    seed_users(conn)
+    conn.commit()
+    conn.close()
     yield
 
 
 app = FastAPI(title=settings.app_name, version=settings.version, lifespan=lifespan)
 
 
-class AuthPayload(BaseModel):
-    sub: str
-    role: str
+class LoginPayload(BaseModel):
+    username: str
+    password: str
 
 
 class TalkPayload(BaseModel):
     text: str
     school_id: str
-    caller: str = "parent"
 
 
 def _db() -> sqlite3.Connection:
@@ -82,7 +107,18 @@ def _require(claims: dict, *actions: str) -> dict:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "app": settings.app_name, "version": settings.version, "ruleset": RULESET_VERSION}
+    conn = _db()
+    try:
+        source = read_status(conn)
+    finally:
+        conn.close()
+    return {
+        "ok": True,
+        "app": settings.app_name,
+        "version": settings.version,
+        "ruleset": RULESET_VERSION,
+        "source": source,
+    }
 
 
 @app.get("/")
@@ -95,16 +131,38 @@ def console() -> FileResponse:
 
 @app.get("/api/morning/inputs")
 def get_inputs() -> dict:
-    return morning_inputs().to_dict()
+    conn = _db()
+    try:
+        inputs, status = effective_inputs(conn)
+    finally:
+        conn.close()
+    payload = inputs.to_dict()
+    payload["source"] = status
+    return payload
 
 
 @app.post("/api/morning/run")
 def run(claims: Annotated[dict, Depends(_auth)]) -> dict:
     _require(claims, "run:morning")
-    conn = connect(settings.db_path)
-    result = run_morning(conn, settings, morning_inputs(), as_user=claims["sub"])
+    conn = _db()
+    inputs, status = effective_inputs(conn)
+    result = run_morning(conn, settings, inputs, as_user=claims["sub"])
     conn.close()
-    return result.to_dict()
+    out = result.to_dict()
+    out["source"] = status
+    return out
+
+
+@app.post("/api/sources/refresh")
+def sources_refresh(claims: Annotated[dict, Depends(_auth)]) -> dict:
+    _require(claims, "run:morning")  # officer only
+    conn = _db()
+    try:
+        status = refresh_fire_source(conn)
+    finally:
+        conn.close()
+    log.info("fire source refresh -> %s (%s)", status["source"], status["count"])
+    return status
 
 
 @app.get("/api/schools")
@@ -128,56 +186,143 @@ def decisions_for_school(school_id: str, claims: Annotated[dict, Depends(_auth)]
 @app.post("/api/agent/talk")
 def talk(payload: TalkPayload, claims: Annotated[dict, Depends(_auth)]) -> dict:
     _require(claims, "agent:talk")
-    state = ConsentState()
-    intent = parse(payload.text)
-    gate = consent_turn(state, intent.name, payload.text)
+    conn = _db()
+    try:
+        caller = claims["sub"]
+        intent = parse(payload.text)
 
-    inputs = morning_inputs()
-    school = next(s for s in inputs.schools if s.id == payload.school_id)
-    decision = decide_school(inputs, school)
+        inputs, provenance = effective_inputs(conn)
+        school = next((s for s in inputs.schools if s.id == payload.school_id), None)
+        if school is None:
+            raise HTTPException(status_code=404, detail=f"no school {payload.school_id}")
+        decision = decide_school(inputs, school)
 
-    if intent.name == "status":
-        reply = short(school, decision)
-    elif intent.name == "why":
-        fired = [r for r in decision.reasons if r.applied]
-        reply = " ".join(f"{r.rule_id}: {r.detail}" for r in fired) or "No specific rule fired."
-    elif intent.name == "change":
-        ev = decision.evidence
-        plume = ev["plume"]
-        reply = (
-            f"Overnight changes: {plume['upwindFires']} stubble fires upwind, plume {plume['score']:.2f}; "
-            f"AQI {ev['trend']['delta']:+.0f} vs the {ev['trend']['baseline']:.0f} baseline."
-        )
-    elif intent.name == "actions":
-        reply = "; ".join(decision.actions) if decision.actions else "Open normally."
-    elif intent.name == "greet":
-        reply = (
-            f"Good morning. I'm FirstLight for {school.name}. "
-            f"Today's status: {decision.level.name_short}. Ask 'why?', or say 'send' to alert parents."
-        )
-    elif intent.name == "send":
-        reply = "Confirmed. I'll only send after you explicitly say 'yes, send it' in this turn."
-    elif intent.name == "recall":
-        reply = "The alert can be retracted. Say 'withdraw the alert' to confirm the recall."
-    else:
-        reply = short(school, decision)
+        # server-side transcript replays prior *user* turns into the consent gate,
+        # so "yes, send it" still needs the send-intent in the same turn (see
+        # consent.SEND_REQUIRES_OWN_TURN) while pendingSend survives a reload.
+        transcripts = TranscriptRepo(conn)
+        state = ConsentState()
+        for row in transcripts.user_turns(caller, payload.school_id):
+            state.observe(row["intent"], row["text"])
+        gate = consent_turn(state, intent.name, payload.text)
+        gate["authorized"] = allowed(claims["role"], "alert:send")
 
-    sent: dict | None = None
-    if gate["maySend"]:
-        conn = _db()
-        cert = sign(decision, settings.secret)
-        Ledger(conn).append("alert", school.id, {"level": decision.level.name_short, "cert": cert})
+        if intent.name == "status":
+            reply = status_reply(school, decision)
+        elif intent.name == "why":
+            reply = why_reply(school, decision)
+        elif intent.name == "change":
+            reply = change_reply(school, decision)
+        elif intent.name == "actions":
+            reply = actions_reply(school, decision)
+        elif intent.name == "greet":
+            reply = greet_reply(school, decision)
+        elif intent.name == "send":
+            reply = send_armed_reply(school, decision)
+        elif intent.name == "recall":
+            reply = recall_reply(school, decision)
+        else:
+            reply = short(school, decision)
+
+        sent: dict | None = None
+        if gate["maySend"]:
+            if not gate["authorized"]:
+                reply = send_denied_reply(school, claims["role"])
+            else:
+                cert = sign(decision, settings.secret)
+                message = f"{decision.level.name_short}: {short(school, decision)}"
+                channel = settings.notify_channel
+                receipt = build_notifier(channel, settings).notify(
+                    school_id=school.id, level=decision.level.name_short, message=message
+                )
+                alert_id = AlertsRepo(conn).save_alert(
+                    school.id,
+                    decision.date,
+                    int(decision.level),
+                    decision.level.name_short,
+                    message,
+                    caller,
+                    cert,
+                    channel=channel,
+                    receipt=receipt,
+                )
+                Ledger(conn).append(
+                    "alert",
+                    school.id,
+                    {"alertId": alert_id, "level": decision.level.name_short, "cert": cert, "channel": channel, "receipt": receipt},
+                )
+                sent = {
+                    "cert": cert,
+                    "status": "sent",
+                    "schoolId": school.id,
+                    "delivery": {"channel": channel, "receipt": receipt, "alertId": alert_id},
+                }
+                reply = send_confirmed_reply(school, decision, cert, channel, receipt)
+
+        turn = transcripts.next_turn(caller, payload.school_id)
+        transcripts.append(caller, payload.school_id, turn, "user", payload.text, intent.name)
+        transcripts.append(caller, payload.school_id, turn, "agent", reply, intent.name)
         conn.commit()
-        conn.close()
-        sent = {"cert": cert, "status": "sent", "schoolId": school.id}
 
+        return {
+            "intent": intent.name,
+            "reply": reply,
+            "decision": decision.to_dict(),
+            "consent": gate,
+            "sent": sent,
+            "recoverable": decision.level.name_short != "GREEN",
+            "source": provenance,
+            "turn": turn,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/api/transcript")
+def transcript(
+    claims: Annotated[dict, Depends(_auth)],
+    school_id: str = "",
+) -> dict:
+    _require(claims, "agent:talk")
+    conn = _db()
+    rows = TranscriptRepo(conn).recent(claims["sub"], school_id)
+    conn.close()
     return {
-        "intent": intent.name,
-        "reply": reply,
-        "decision": decision.to_dict(),
-        "consent": gate,
-        "sent": sent,
-        "recoverable": decision.level.name_short != "GREEN",
+        "turns": [
+            {
+                "id": r["id"],
+                "turn": r["turn"],
+                "speaker": r["speaker"],
+                "intent": r["intent"],
+                "text": r["text"],
+                "createdUtc": r["created_utc"],
+            }
+            for r in rows
+        ]
+    }
+
+
+@app.get("/api/outbox")
+def outbox(claims: Annotated[dict, Depends(_auth)]) -> dict:
+    _require(claims, "alert:send")  # principal + officer
+    conn = _db()
+    rows = AlertsRepo(conn).recent(25)
+    conn.close()
+    return {
+        "messages": [
+            {
+                "alertId": r["id"],
+                "schoolId": r["school_id"],
+                "level": r["level_name"],
+                "message": r["message"],
+                "issuedBy": r["issued_by"],
+                "issuedUtc": r["issued_utc"],
+                "channel": r["channel"],
+                "receipt": r["receipt"],
+                "cert": r["cert"],
+            }
+            for r in rows
+        ]
     }
 
 
@@ -203,15 +348,34 @@ def _ledger(conn: sqlite3.Connection) -> Ledger:
     return Ledger(conn)
 
 
+@app.post("/api/auth/login")
+def login(payload: LoginPayload) -> JSONResponse:
+    conn = _db()
+    try:
+        user = authenticate(conn, payload.username, payload.password)
+    finally:
+        conn.close()
+    if user is None:
+        raise HTTPException(status_code=401, detail="invalid credentials")
+    token = issue(user["sub"], user["role"], settings.secret, settings.token_ttl_seconds)
+    return JSONResponse({"token": token, "role": user["role"], "sub": user["sub"], "displayName": user["displayName"]})
+
+
 @app.post("/api/auth/issue")
-def issue_token(payload: AuthPayload) -> JSONResponse:
-    # Demo-only credential issue. Ship It uses Cognito; see sam/template.yaml.
-    if payload.role not in ("parent", "principal", "officer"):
-        raise HTTPException(status_code=400, detail="unknown role")
-    token = issue(payload.sub, payload.role, settings.secret, settings.token_ttl_seconds)
-    return JSONResponse({"token": token, "role": payload.role, "sub": payload.sub})
+def issue_token() -> JSONResponse:
+    # Open role minting is closed: possession of a URL is not identity.
+    # Build It authenticates via /api/auth/login; Ship It uses Cognito (sam/template.yaml).
+    raise HTTPException(
+        status_code=403,
+        detail="open role minting is disabled; sign in with a seeded account via POST /api/auth/login",
+    )
 
 
 @app.get("/api/me")
 def me(claims: Annotated[dict, Depends(_auth)]) -> dict:
-    return {"sub": claims["sub"], "role": claims["role"]}
+    conn = _db()
+    try:
+        row = UsersRepo(conn).get(claims["sub"])
+    finally:
+        conn.close()
+    return {"sub": claims["sub"], "role": claims["role"], "name": row["display_name"] if row else ""}

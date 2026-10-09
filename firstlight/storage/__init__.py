@@ -4,8 +4,11 @@ from .repositories import (
     DecisionsRepo,
     FiresRepo,
     HistoryRepo,
+    MetaRepo,
     SchoolsRepo,
     StationsRepo,
+    TranscriptRepo,
+    UsersRepo,
 )
 
 __all__ = [
@@ -17,4 +20,7 @@ __all__ = [
     "HistoryRepo",
     "DecisionsRepo",
     "AlertsRepo",
+    "UsersRepo",
+    "TranscriptRepo",
+    "MetaRepo",
 ]

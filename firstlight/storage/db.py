@@ -87,9 +87,45 @@ CREATE TABLE IF NOT EXISTS alerts (
     issued_by TEXT NOT NULL,
     issued_utc TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'sent',
-    cert TEXT NOT NULL
+    cert TEXT NOT NULL,
+    channel TEXT NOT NULL DEFAULT '',
+    receipt TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    password_hash TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS transcript (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    caller TEXT NOT NULL,
+    school_id TEXT NOT NULL,
+    turn INTEGER NOT NULL,
+    speaker TEXT NOT NULL,
+    intent TEXT NOT NULL DEFAULT '',
+    text TEXT NOT NULL,
+    created_utc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_transcript_conv ON transcript(caller, school_id, id);
+
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );
 """
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Additive migrations for databases created before a column existed."""
+    alert_cols = {row[1] for row in conn.execute("PRAGMA table_info(alerts)")}
+    if "channel" not in alert_cols:
+        conn.execute("ALTER TABLE alerts ADD COLUMN channel TEXT NOT NULL DEFAULT ''")
+    if "receipt" not in alert_cols:
+        conn.execute("ALTER TABLE alerts ADD COLUMN receipt TEXT NOT NULL DEFAULT ''")
 
 
 def connect(db_path: Path) -> sqlite3.Connection:
@@ -100,6 +136,7 @@ def connect(db_path: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(SCHEMA)
     conn.executescript(LEDGER_TABLE)
+    _migrate(conn)
     conn.commit()
     return conn
 

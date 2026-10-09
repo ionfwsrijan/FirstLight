@@ -11,7 +11,7 @@
 > engine — ready the moment the account verification clears.
 
 [![Python](https://img.shields.io/badge/python-3.13-3776ab)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-102%20passed-2eb872)](scripts/gate.ps1)
+[![Tests](https://img.shields.io/badge/tests-116%20passed-2eb872)](scripts/gate.ps1)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
 **Console:** `py -m firstlight.cli serve` → <http://127.0.0.1:8000> · **Demo film:** [docs/demo-script.md](docs/demo-script.md) · **Architecture:** [docs/architecture.md](docs/architecture.md) (Mermaid) · **AuthZ engine:** [AWS Cedar policies](firstlight/auth/cedar/policies.cedar) · **Try it locally:** `py -m firstlight.cli seed && py -m firstlight.cli serve`
@@ -20,13 +20,16 @@ Every winter, NCR children lose school days to closures nobody decided — a
 cloud of stubble smoke arrives overnight, a principal wakes up confused, and
 the class call is made in a panic, one school at a time, hours too late.
 FirstLight is the call made *by the rules* at 6 AM: it reads 7 CPCB stations,
-7 Punjab/Haryana stubble fires and 7 prior mornings on **2026-10-08**, and a
-deterministic engine answers for each school — **GREEN, PROTECTED or CLOSED** —
-from the AQI bands and GRAP stages the authorities already published. An
-agent narrates that verdict in plain words (or Hinglish), explains *why* with
-the exact rule that fired, and only sends the parent alert after **you confirm
-in your own transcript**. Every decision lands in a tamper-evident ledger, and
-every alert carries an HMAC certificate you can verify later, offline.
+the stubble fires upwind of the NCR (the frozen scenario's 7, or a **live NASA
+FIRMS 24h feed** — the one input that genuinely changes day to day) and 7 prior
+mornings on **2026-10-08**, and a deterministic engine answers for each school —
+**GREEN, PROTECTED or CLOSED** — from the AQI bands and GRAP stages the
+authorities already published. An agent narrates that verdict in plain words
+(or Hinglish), explains *why* with the exact rule that fired, and only sends
+the parent alert after **you confirm in your own transcript**. Every decision
+lands in a tamper-evident ledger, and every alert is dispatched with a channel
+receipt you can track in the **outbox**, carrying an HMAC certificate you can
+verify later, offline.
 
 Built solo for the AWS *First Commit* hackathon. Everything below is live code
 with tests, not a slide.
@@ -38,13 +41,17 @@ py -m firstlight.cli seed    # build the local sqlite from the frozen 2026-10-08
 py -m firstlight.cli serve   # FastAPI on http://127.0.0.1:8000 (auto-seeds if empty)
 ```
 
-Open <http://127.0.0.1:8000>, **issue a token** (pick `officer`), **list
-schools**, **run morning**, then talk to the agent: *is today safe for
-school?* → *why?* → *would you send it if the air got worse?* (nothing is sent
-— that was a question) → *yes, send it* (signed certificate + alert) → **verify
-ledger**. Every verdict, consent decision and tamper check you see is the
-production code path against a real SQLite file — only the air data is frozen,
-so the film can be re-recorded forever and the answers never change.
+Open <http://127.0.0.1:8000>, **sign in** with a seeded account (`officer@
+firstlight.demo` / `officer123` — or click a card to fill it), **list schools**,
+**run the morning**, then talk to the agent: *is today safe for school?* → *why?*
+→ *would you send it if the air got worse?* (nothing is sent — that was a
+question) → *yes, send it* (signed certificate + **delivery receipt in the
+outbox**) → **verify ledger**. Every verdict, consent decision and tamper check
+you see is the production code path against a real SQLite file. Sign in as
+**principal** to actually dispatch (a parent's "yes, send it" is politely
+denied by the role gate), and as **officer** to swap the frozen fires for the
+**live NASA FIRMS feed** (`Refresh fire data`) — the source chip goes
+`LIVE · FIRMS`, and every input's provenance is labeled on the dashboard.
 
 ---
 
@@ -63,12 +70,14 @@ so the film can be re-recorded forever and the answers never change.
         ▼
         hash-chained ledger  → decision/alert/cert rows; verify() must pass to be shown
         ▼
-   you, in the console ◀──── FastAPI POST /api/agent/talk   (consent gate)
+   you, in the console ◀──── FastAPI POST /api/agent/talk   (consent gate + role gate)
         "is today safe for school?"  → status, band, GRAP, upwind fires, trend
         "why?"                       → the exact rules that fired, verbatim
         "yes, send it"               → HMAC-signed certificate + notifier dispatch
         ▼
         notifier (console / silent / SMTP / webhook) → parent + principal + ward office
+        ▼
+        outbox (GET /api/outbox)     → every send visible: channel + receipt + cert
 ```
 
 The same morning, one hour later, is decisionally identical: the engine is
@@ -98,25 +107,39 @@ wrong thing. FirstLight's controls are in code and tests, not in a prompt:
    GRAP/plume tables. There is **no code path** where a model, prompt or coin
    toss produces a verdict; the agent only converts `Decision` to speech.
 2. **Consent is checked against your transcript, never the model's claim.**
-   `consent_turn` reads the raw text of the current turn; sending requires the
-   send intent **and** an explicit confirmation phrase (`yes, send it`, `bhejo`)
-   in *that same turn*. A question — *"would you send it?"* — never sends.
-3. **Roles are one-directional.** A parent can read status and ask questions;
-   only a principal can `alert:send`; only an officer can `run:morning` or
-   read the ledger. Forbidden by default; tested per endpoint.
-4. **Every fact is chained.** The ledger is append-only and hash-chained
+   Every talk turn is persisted (`/api/transcript`) and replayed into the
+   consent gate, so the gate remembers your conversation even across a reload.
+   `consent_turn` still requires the send intent **and** an explicit
+   confirmation phrase (`yes, send it`, `bhejo`) in *the same turn*. A
+   question — *"would you send it?"* — never sends.
+3. **Roles are one-directional, end to end.** A parent can read status and ask
+   questions; only a principal can `alert:send`; only an officer can
+   `run:morning`, refresh live data or read the ledger. Forbidden by default;
+   tested per endpoint — and the *agent itself* refuses to dispatch for a role
+   without `alert:send`, even after explicit confirmation.
+4. **Live data is labeled, and falls back.** The engine never touches the
+   network. An officer's `Refresh fire data` fetches NASA FIRMS and records
+   provenance (source, timestamp, count, fallback flag) in the DB; the console
+   labels every input with where it came from and when it was observed.
+   If FIRMS is unreachable the morning stays on the frozen scenario, visibly.
+5. **Every fact is chained.** The ledger is append-only and hash-chained
    (SHA-256). An offline edit breaks `verify()` and the day stops being shown
    as authentic — edits are *detectable*, not silent.
-5. **Every alert is signed.** Alerts carry an HMAC-signed certificate over the
-   canonical decision JSON, so a judge can verify one later with a one-liner.
-6. **Deterministic and idempotent.** The same inputs give the same verdict a
+6. **Every alert is signed and its delivery proven.** Alerts carry an
+   HMAC-signed certificate over the canonical decision JSON and are dispatched
+   through a real notifier; the returned receipt (e.g. `console-s-avini`,
+   `smtp-…`) is recorded alongside in the outbox.
+7. **Deterministic and idempotent.** The same inputs give the same verdict a
    hundred times; replaying the morning does not duplicate decisions.
-7. **Fail-closed by default.** Published endpoints 401 without a token, 403 on
-   the wrong role, 404 for unknown schools; unknown agent turns return the
-   status narration, never an invented answer.
-8. **Tests assert the safety model.** `tests/test_agent.py` proves the consent
+8. **Fail-closed by default.** Published endpoints 401 without a token,
+   **403 on open role minting** (`/api/auth/issue` is closed — login only),
+   403 on the wrong role, 404 for unknown schools; unknown agent turns return
+   the status narration, never an invented answer.
+9. **Tests assert the safety model.** `tests/test_agent.py` proves the consent
    gate, `tests/test_ledger.py` proves tamper detection, `tests/test_api.py`
-   proves role enforcement on live endpoints.
+   proves login, closed minting, role enforcement and the delivery outbox on
+   live endpoints, `tests/test_sources.py` proves FIRMS parsing and the
+   fallback/provenance path.
 
 Details: [`tests/`](tests/) and [`docs/architecture.md`](docs/architecture.md).
 
@@ -127,10 +150,14 @@ Details: [`tests/`](tests/) and [`docs/architecture.md`](docs/architecture.md).
 ```powershell
 git clone https://github.com/ionfwsrijan/FirstLight && cd firstlight
 py -m pip install -e ".[test]"     # fastapi, uvicorn, pydantic, httpx
-py -m firstlight.cli gate          # 102 tests
+py -m firstlight.cli gate          # 116 tests
 py -m firstlight.cli seed          # build the local sqlite (or let the server auto-seed)
 py -m firstlight.cli serve         # http://127.0.0.1:8000
 ```
+
+Sign in with a demo account (seeded idempotently on every boot):
+`parent@firstlight.demo` / `parent123` · `principal@firstlight.demo` /
+`principal123` · `officer@firstlight.demo` / `officer123`.
 
 Needs Python 3.11+. No Docker, no AWS credentials, no npm. `scripts/run.ps1`
 and `scripts/gate.ps1` wrap the two common commands.
@@ -166,17 +193,21 @@ firstlight/
                        stubble-plume model, 7-day trend, decision orchestration
   dsl/                 data-driven rule chain evaluated like a tiny language (7 rules)
   ledger/store.py      append-only hash-chained event ledger + verify()
-  auth/                HMAC capability tokens, role matrix, AWS Cedar policies
+  auth/                HMAC capability tokens, seeded password login (pbkdf2-sha256), role matrix, Cedar policies
   agent/               intents (en + Hindi/Hinglish), narrator, consent gate, certificate signing
-  notifier/            console / silent / SMTP / webhook dispatch abstraction
-  storage/             SQLite schema (WAL) + repositories: stations, schools, fires, history, decisions, alerts
-  pipeline/            frozen 2026-10-08 scenario + run_morning orchestration
-  api/                 FastAPI: /api/health, /api/morning/run, /api/agent/talk, /api/ledger*, /api/auth/issue, /
+  notifier/            console / silent / SMTP / webhook dispatch abstraction (returns a receipt)
+  storage/             SQLite schema (WAL) + repositories: stations, schools, fires, history, decisions,
+                       alerts (channel+receipt), users, server-side agent transcript, meta (provenance)
+  pipeline/            frozen 2026-10-08 scenario + live NASA FIRMS source (parse/fetch/refresh/fallback)
+                       + run_morning orchestration
+  api/                 FastAPI: /api/health, /api/auth/login (issue is 403), /api/morning/*, /api/sources/refresh,
+                       /api/agent/talk, /api/transcript, /api/outbox, /api/ledger*, /
   cli/                 serve · seed · gate
-web/index.html         the console (no build step, no npm)
+web/index.html         the console (login, source chip, provenance labels, outbox, transcript — no build step)
 sam/                   Ship It twin: template.yaml, Lambda handlers, DynamoDB mirror, core layer
-tests/                 102 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
-                       auth + Cedar, intents + consent, certificates, pipeline, API roles, SAM mirror
+tests/                 116 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+                       auth + Cedar + login, intents + consent, certificates, pipeline, API roles,
+                       FIRMS parsing + fallback, outbox + transcript, SAM mirror
 scripts/               run.ps1 · gate.ps1
 docs/                  architecture.md (Mermaid) · demo-script.md (the film, shot by shot)
 ```
@@ -207,12 +238,16 @@ What "production shape" means here, and where each claim is enforced:
 | The morning is idempotent per school+date (upsert), and the whole thing is committed atomically after the ledger append | `pipeline/morning.py`, `storage/repositories.py` |
 | Determinism is a test: repeated runs produce byte-identical decision payloads | `tests/test_engine.py`, `tests/test_pipeline.py` |
 | The demo console serves from the same FastAPI process, no separate build | `api/__init__.py` `/`, `web/index.html` |
+| Live fire refresh is officer-only; provenance (source, timestamp, count, fallback) is persisted and labeled; FIRMS failures fall back to the frozen scenario | `pipeline/sources.py`, `storage/repositories.py`, `api/__init__.py` |
+| Every send is auditable end to end: alert row carries channel + receipt + cert, the outbox exposes it, talk turns persist server-side | `storage/repositories.py`, `api/__init__.py` |
 
 Known gaps, on purpose for a hackathon: a dev-only default secret instead of a
-real secret manager (inject it in prod), a frozen scenario instead of a live
-CPCB/FIRMS feed (the ingest interface is the same dict shape), and the Ship It
-twin is un-deployed because the AWS account is under verification — hence Build
-It as the demoable path, with the twin `sam validate`-clean.
+real secret manager (inject it in prod), and the demo's stations/wind/history
+stay frozen (only the fires are live, via NASA FIRMS with a visible fallback —
+the ingest interface is the same dict shape, so a full feed is a swap of one
+fetcher). The Ship It twin is un-deployed because the AWS account is under
+verification — hence Build It as the demoable path, with the twin
+`sam validate`-clean.
 
 ## Charts
 

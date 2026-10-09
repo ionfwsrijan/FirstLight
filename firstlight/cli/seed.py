@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from ..auth import seed_users
 from ..config import settings
 from ..pipeline.scenario import morning_inputs
 from ..storage import FiresRepo, HistoryRepo, SchoolsRepo, StationsRepo, connect
@@ -29,12 +30,14 @@ def seed() -> dict:
         # prior mornings are the trend baseline; today's is set by run_morning
         for idx, aqi in enumerate(aqis, start=1):
             history_repo.set_morning(sid, f"2026-10-{idx:02d}", aqi)
+    seed_users(db)  # demo identities for /api/auth/login
     db.commit()
     counts = {
         "stations": db.execute("SELECT COUNT(*) FROM stations").fetchone()[0],
         "schools": db.execute("SELECT COUNT(*) FROM schools").fetchone()[0],
         "fires": db.execute("SELECT COUNT(*) FROM fires").fetchone()[0],
         "history_rows": db.execute("SELECT COUNT(*) FROM history_aqi").fetchone()[0],
+        "users": db.execute("SELECT COUNT(*) FROM users").fetchone()[0],
     }
     db.close()
     return counts

@@ -11,7 +11,7 @@ import sqlite3
 from datetime import datetime, timezone
 
 from ..domain import Decision, School, Station, StubbleFire
-from .db import json_of
+from .db import json_of, loads
 
 
 class StationsRepo:
@@ -137,14 +137,122 @@ class AlertsRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def save_alert(self, school_id: str, date: str, level: int, level_name: str, message: str, issued_by: str, cert: str) -> int:
+    def save_alert(
+        self,
+        school_id: str,
+        date: str,
+        level: int,
+        level_name: str,
+        message: str,
+        issued_by: str,
+        cert: str,
+        channel: str = "",
+        receipt: str = "",
+    ) -> int:
         cur = self.conn.execute(
-            "INSERT INTO alerts (school_id, date, level, level_name, message, issued_by, issued_utc, status, cert) "
-            "VALUES (?,?,?,?,?,?,?, 'sent', ?)",
-            (school_id, date, level, level_name, message, issued_by, datetime.now(timezone.utc).isoformat(), cert),
+            "INSERT INTO alerts (school_id, date, level, level_name, message, issued_by, issued_utc, status, cert, channel, receipt) "
+            "VALUES (?,?,?,?,?,?,?, 'sent', ?,?,?)",
+            (
+                school_id,
+                date,
+                level,
+                level_name,
+                message,
+                issued_by,
+                datetime.now(timezone.utc).isoformat(),
+                cert,
+                channel,
+                receipt,
+            ),
         )
         return cur.lastrowid
 
-    def recent(self, limit: int = 20) -> list[dict]:
+    def recent(self, limit: int = 25) -> list[dict]:
         rows = self.conn.execute("SELECT * FROM alerts ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
         return [dict(r) for r in rows]
+
+
+class UsersRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def upsert(self, username: str, display_name: str, role: str, salt: str, password_hash: str) -> None:
+        self.conn.execute(
+            "INSERT INTO users (username, display_name, role, salt, password_hash) VALUES (?,?,?,?,?) "
+            "ON CONFLICT(username) DO UPDATE SET display_name=excluded.display_name, role=excluded.role, "
+            "salt=excluded.salt, password_hash=excluded.password_hash",
+            (username, display_name, role, salt, password_hash),
+        )
+
+    def get(self, username: str) -> dict | None:
+        row = self.conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        return dict(row) if row else None
+
+
+class TranscriptRepo:
+    """Server-side conversation record: the consent gate replays these turns."""
+
+    MAX_TURNS = 100
+
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def user_turns(self, caller: str, school_id: str) -> list[dict]:
+        """Prior *user* turns only (assistant replies are never consent input)."""
+        rows = self.conn.execute(
+            "SELECT intent, text FROM transcript WHERE caller=? AND school_id=? AND speaker='user' ORDER BY id ASC",
+            (caller, school_id),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def next_turn(self, caller: str, school_id: str) -> int:
+        row = self.conn.execute(
+            "SELECT COALESCE(MAX(turn), 0) + 1 AS n FROM transcript WHERE caller=? AND school_id=?",
+            (caller, school_id),
+        ).fetchone()
+        return int(row["n"])
+
+    def append(self, caller: str, school_id: str, turn: int, speaker: str, text: str, intent: str) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO transcript (caller, school_id, turn, speaker, intent, text, created_utc) VALUES (?,?,?,?,?,?,?)",
+            (caller, school_id, turn, speaker, intent, text, datetime.now(timezone.utc).isoformat()),
+        )
+        self.conn.execute(
+            "DELETE FROM transcript WHERE caller=? AND school_id=? AND id NOT IN "
+            "(SELECT id FROM transcript WHERE caller=? AND school_id=? ORDER BY id DESC LIMIT ?)",
+            (caller, school_id, caller, school_id, self.MAX_TURNS),
+        )
+        return int(cur.lastrowid)
+
+    def recent(self, caller: str, school_id: str = "", limit: int = 60) -> list[dict]:
+        if school_id:
+            rows = self.conn.execute(
+                "SELECT * FROM transcript WHERE caller=? AND school_id=? ORDER BY id DESC LIMIT ?",
+                (caller, school_id, limit),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM transcript WHERE caller=? ORDER BY id DESC LIMIT ?",
+                (caller, limit),
+            ).fetchall()
+        return [dict(r) for r in reversed(rows)]
+
+
+class MetaRepo:
+    """Small key/value JSON store (data provenance lives here)."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def get(self, key: str) -> object | None:
+        row = self.conn.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        return loads(row["value"]) if row else None
+
+    def set(self, key: str, value: object) -> None:
+        self.conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, json_of(value)),
+        )
+
+    def delete(self, key: str) -> None:
+        self.conn.execute("DELETE FROM meta WHERE key=?", (key,))

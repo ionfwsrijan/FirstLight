@@ -46,12 +46,16 @@ def decide_school(
 
     hits, level = evaluate(catalog(), features)
 
+    # Actions come only from the rules that decided THIS level; otherwise a
+    # CLOSED school would inherit "Open normally" from the green baseline.
+    aligned_rules = [rule for rule in catalog() if _rule_fired(rule.id, hits) and rule.level == level]
+    if not aligned_rules:
+        aligned_rules = [rule for rule in catalog() if rule.level == level]
     actions = tuple(
         sorted(
             {
                 action
-                for rule in catalog()
-                if _rule_fired(rule.id, hits)
+                for rule in aligned_rules
                 for action in rule.actions
             }
         )
