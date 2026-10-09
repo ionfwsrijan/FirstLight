@@ -24,7 +24,10 @@ from firstlight.agent import (
 from firstlight.engine import decide_school
 from firstlight.pipeline.scenario import morning_inputs
 
-from .shared import notify_webhook, parse_body, principal_id, put_alert, respond
+try:
+    from .shared import notify_webhook, parse_body, principal_id, put_alert, respond
+except ImportError:  # Lambda treats handlers/ as the code root (no package parent)
+    from shared import notify_webhook, parse_body, principal_id, put_alert, respond
 
 
 def handler(event: dict, _context) -> dict:

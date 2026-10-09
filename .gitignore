@@ -13,6 +13,7 @@ data/
 
 # Build layer output
 sam/build-layer/
+.aws-sam/
 
 # Tooling
 .pytest_cache/

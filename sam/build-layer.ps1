@@ -11,9 +11,9 @@ param([string]$LayerDir = "sam/build-layer")
 $package = "firstlight"
 $repo = Split-Path $PSScriptRoot
 $dest = Join-Path $repo "$LayerDir\python\$package"
-$src = Join-Path $repo "$package\$package"
+$src = Join-Path $repo "$package"
 
 if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
 New-Item -ItemType Directory -Path $dest -Force | Out-Null
-Copy-Item -LiteralPath "$src\*" -Destination $dest -Recurse -Force
+Copy-Item -Path "$src\*" -Destination $dest -Recurse -Force
 Write-Output "Built $dest"

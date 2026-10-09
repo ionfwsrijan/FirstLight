@@ -10,7 +10,10 @@ from firstlight.agent import narrate, sign
 from firstlight.engine import decide_all
 from firstlight.pipeline.scenario import morning_inputs
 
-from .shared import get_latest, parse_body, principal_id, put_alert, put_decision, respond, notify_webhook
+try:
+    from .shared import get_latest, parse_body, principal_id, put_alert, put_decision, respond, notify_webhook
+except ImportError:  # Lambda treats handlers/ as the code root (no package parent)
+    from shared import get_latest, parse_body, principal_id, put_alert, put_decision, respond, notify_webhook
 
 
 def handler(event: dict, _context) -> dict:

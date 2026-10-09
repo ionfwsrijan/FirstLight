@@ -12,6 +12,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from decimal import Decimal
 
 import boto3
 
@@ -22,8 +23,19 @@ def _table():
     return boto3.resource("dynamodb").Table(TABLE)
 
 
+def _to_dynamo(value):
+    """DynamoDB supports Decimal, not Python float, for numeric values."""
+    if isinstance(value, float):
+        return Decimal(str(value))
+    if isinstance(value, dict):
+        return {k: _to_dynamo(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_to_dynamo(v) for v in value]
+    return value
+
+
 def put_decision(school_id: str, decision: dict) -> None:
-    row = {
+    row = _to_dynamo({
         "pk": f"SCHOOL#{school_id}",
         "sk": f"DECISION#{decision['date']}",
         "level": decision["level"],
@@ -32,7 +44,7 @@ def put_decision(school_id: str, decision: dict) -> None:
         "plumeScore": decision["plumeScore"],
         "trend": decision["trend"],
         "payload": json.dumps(decision, ensure_ascii=False, sort_keys=True),
-    }
+    })
     _table().put_item(Item=row)
 
 

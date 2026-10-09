@@ -141,7 +141,7 @@ Resources:
       Type: COGNITO_USER_POOLS
       RestApiId: !Ref FirstLightApi
       IdentitySource: method.request.header.Authorization
-      ProviderArns:
+      ProviderARNs:
         - !GetAtt FirstLightUserPool.Arn
 
   FirstLightApi:

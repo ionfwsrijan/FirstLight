@@ -27,7 +27,7 @@ the same consent-gated agent — running on AWS as **Build It, cloud-shaped**.
 - `build-layer.ps1` — packages the `firstlight` Python package into a Lambda
   layer so the cloud verdict is byte-identical to the local verdict.
 
-## Deploy (when the AWS account verification clears)
+## Deploy (from source, verified working)
 
 ```powershell
 .\sam\build-layer.ps1                    # build layer content
@@ -44,9 +44,41 @@ GET  <ApiUrl>/status?schoolId=s-avini
 POST <ApiUrl>/talk  {"text":"yes, send it","school_id":"s-avini"}
 ```
 
+## Deployed (live) instance
+
+Deployed and verified end to end in the Srijan AWS account, region `ap-south-2`:
+
+- **Stack**: `firstlight-shipit` — API Gateway + 3 Lambdas (arm64, python3.12) +
+  Cognito user pool + DynamoDB `firstlight-shipit-DecisionsTable-*`.
+- **ApiUrl**: `https://2mzwa6sjug.execute-api.ap-south-2.amazonaws.com/dev/`
+  (Cognito authorizer on every route — no token ⇒ 401).
+- **UserPoolId**: `ap-south-2_P3svZgHis` · **UserPoolClientId**:
+  `1kvqda903s34vjavra0d71gnvo`.
+- Verified live: `/morning` → 7 decisions (5 CLOSED / 2 PROTECTED, byte-identical
+  to the local build), `/status` → latest decision, `/talk` consent flow (a
+  question never sends; explicit "yes, send it" sends with a delivery receipt),
+  unknown school → 404, no token → 401.
+
+To recreate it from scratch (Windows):
+
+```powershell
+py -m pip install aws-sam-cli cfn-lint externaltooling  # sam.exe lands in ...\Python313\Scripts
+powershell -File sam/build-layer.ps1                     # must print "files ... 80" (not a 0-file copy)
+sam build --template sam/template.yaml  # needs a python3.12 interpreter on PATH (py -3.12)
+sam deploy --stack-name firstlight-shipit --capabilities CAPABILITY_IAM --no-confirm-changeset --resolve-s3 --region ap-south-2 --parameter-overrides Env=dev
+```
+
+Add a demo user and enable the admin password flow (one-time, per pool):
+
+```powershell
+aws cognito-idp update-user-pool-client --user-pool-id <pool> --client-id <client> --explicit-auth-flows ALLOW_USER_SRP_AUTH ALLOW_REFRESH_TOKEN_AUTH ALLOW_ADMIN_USER_PASSWORD_AUTH
+aws cognito-idp admin-create-user --user-pool-id <pool> --username meera --user-attributes Name=email,Value=parent@firstlight.demo Name=email_verified,Value=true
+aws cognito-idp admin-set-user-password --user-pool-id <pool> --username meera --password 'Parent12345' --permanent
+aws cognito-idp admin-initiate-auth --user-pool-id <pool> --client-id <client> --auth-flow ADMIN_USER_PASSWORD_AUTH --auth-parameters USERNAME=meera,PASSWORD=Parent12345
+```
+
 ## Keys you will need in Review
 
-- `sam/template.yaml` is fully formed, so `sam validate` passes before the
-  account is even verified (the account is under verification, so nothing has
-  been live-deployed — say so in Review).
+- `sam/template.yaml` is fully formed, so `sam validate` passes; the twin is
+  now **live-deployed and verified**, not just template-valid.
 - `firstlight/auth/cedar/policies.cedar` is where `aws` meets the local build.
