@@ -1,227 +1,1264 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>FirstLight · Ship It console</title>
+<!--__API_BASE__--><!-- the Ship It UiHandler injects window.__API__ + __CREDS__ here -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FirstLight — 6 AM, for the air a child breathes</title>
 <style>
-:root{--bg:#F6F8FC;--surface:#FFFFFF;--surface2:#F1F5FB;--line:#E3EAF5;--text:#0B2B4C;--muted:#6B7A93;--faint:#94A3B8;--brand:#2E6BFF;--good:#23A55A;--warn:#E79B23;--bad:#E54848;--r:12px;--shadow:0 1px 2px rgba(11,43,76,.06),0 8px 24px rgba(11,43,76,.08)}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font:14px/1.5 -apple-system,"Segoe UI",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-header{background:var(--surface);border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.brand{font-weight:800;font-size:16px;letter-spacing:-.01em}
-.brand span{color:var(--brand)}
-.chip{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:var(--brand);color:#fff}
-.chip.gray{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
-.spacer{flex:1}
-main{max-width:960px;margin:26px auto;padding:0 20px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px}
-h2{font-size:15px;margin-bottom:4px}
-.sub{color:var(--muted);font-size:12.5px;margin-bottom:16px}
-button{cursor:pointer;border:0;border-radius:9px;font-weight:700;font-size:13px;padding:9px 16px;background:var(--brand);color:#fff;transition:filter .12s}
-button:hover{filter:brightness(1.06)}
-button.ghost{background:var(--surface2);color:var(--text);border:1px solid var(--line)}
-button:disabled{opacity:.55;cursor:not-allowed}
-input{padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;width:100%}
-input:focus{outline:2px solid rgba(46,107,255,.25)}
-.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase}
-.tag.good{background:rgba(35,165,90,.12);color:var(--good)}
-.tag.warn{background:rgba(231,155,35,.14);color:#A96B12}
-.tag.bad{background:rgba(229,72,72,.12);color:var(--bad)}
-.tag.blue{background:rgba(46,107,255,.12);color:var(--brand)}
-.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px}
-.school{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:14px}
-.school b{font-size:13px}
-.school .meta{color:var(--muted);font-size:12px;margin-top:3px}
-.school .foot{display:flex;align-items:center;gap:8px;margin-top:10px}
-.ca{color:var(--muted);font-size:11.5px;margin-top:6px}
-.alert{border-left:3px solid var(--brand);background:var(--surface2);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12.5px}
-.alert .r{color:var(--faint);font-size:11.5px;margin-top:4px;word-break:break-all}
-.hidden{display:none}
-.hero{max-width:420px;margin:8vh auto 0;text-align:center}
-.hero .logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#2E6BFF,#3F9DFF);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff}
-.hero p{color:var(--muted);font-size:13px;margin:8px 0 20px}
-.accounts{margin-top:22px;text-align:left;border-top:1px solid var(--line);padding-top:14px;font-size:12px;color:var(--muted)}
-.accounts code{background:var(--surface2);padding:1px 6px;border-radius:6px;font-size:11px}
-.chat{display:flex;flex-direction:column;gap:10px;margin-top:8px}
-.msg{background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:13px;white-space:pre-wrap}
-.msg.me{background:rgba(46,107,255,.08);align-self:flex-end;max-width:80%}
-.msg .who{font-size:10.5px;font-weight:800;color:var(--faint);margin-bottom:3px}
-.sendbar{display:flex;gap:8px;margin-top:12px}
-a.plain{color:var(--brand);text-decoration:none;font-weight:700}
-code.hl{background:var(--surface2);padding:2px 6px;border-radius:6px;font-size:12px}
+  :root{
+    --bg:#F6F8FC; --surface:#FFFFFF; --surface2:#FAFBFE;
+    --border:#E6EAF2; --border2:#D9E0EF; --line:#EEF1F7;
+    --text:#151C36; --muted:#5A6B8C; --faint:#8B96AD;
+    --primary:#2E6BFF; --primary-strong:#1C54E6; --primary-soft:#EAF1FF;
+    --good:#23A55A; --good-soft:#E4F7EE;
+    --amber:#E79B23; --amber-soft:#FDF2E2;
+    --red:#E54848; --red-soft:#FBE9E9;
+    --violet:#6E56CF; --violet-soft:#EFECFC;
+    --shadow:0 1px 2px rgba(21,28,54,.05), 0 10px 30px -18px rgba(21,28,54,.22);
+    --shadow-sm:0 1px 2px rgba(21,28,54,.06);
+    --r-lg:16px; --r:12px; --r-sm:9px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  button{font:inherit;cursor:pointer}
+  input,select{font:inherit}
+  ::selection{background:var(--primary-soft)}
+
+  .app{display:flex;min-height:100vh}
+  .hidden{display:none!important}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{width:252px;flex:0 0 252px;background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:20}
+  .brand{display:flex;align-items:center;gap:11px;padding:20px 18px 14px}
+  .brand-mark{width:38px;height:38px;border-radius:11px;flex:0 0 auto;
+    background:linear-gradient(135deg,#2E6BFF,#6E56CF);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px -6px rgba(46,107,255,.6)}
+  .brand b{display:block;font-size:16px;letter-spacing:.2px}
+  .brand small{display:block;color:var(--faint);font-size:11px;font-weight:600;letter-spacing:.3px}
+  .brand small b{display:inline;color:var(--primary);font-size:11px}
+  nav{padding:6px 12px;flex:1;overflow-y:auto}
+  .nav-label{font-size:10.5px;font-weight:700;letter-spacing:1.1px;color:var(--faint);
+    text-transform:uppercase;padding:16px 10px 6px}
+  .nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;margin:2px 0;
+    border:0;background:transparent;border-radius:var(--r-sm);color:var(--muted);font-weight:600;font-size:13.5px;text-align:left}
+  .nav-item svg{flex:0 0 auto}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:var(--primary-soft);color:var(--primary)}
+  .nav-item .spacer{margin-left:auto}
+
+  .session{margin:10px 12px 16px;padding:12px;border:1px solid var(--border);border-radius:var(--r);
+    background:var(--surface2)}
+  .session .who{display:flex;align-items:center;gap:10px}
+  .session .av{width:34px;height:34px;border-radius:50%;flex:0 0 auto;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+    background:linear-gradient(135deg,#2E6BFF,#6E56CF)}
+  .session .who b{display:block;font-size:13px;line-height:1.2}
+  .session .who span{display:block;font-size:11.5px;color:var(--faint);text-transform:capitalize}
+  .session .sig{display:flex;align-items:center;justify-content:space-between;margin-top:10px;
+    padding-top:9px;border-top:1px solid var(--border)}
+  .session .sig em{font-style:normal;color:var(--good);font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px}
+  .session .sig button{background:none;border:0;color:var(--faint);padding:4px;border-radius:6px;display:flex}
+  .session .sig button:hover{color:var(--red);background:var(--red-soft)}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{position:sticky;top:0;z-index:15;background:rgba(246,248,252,.86);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);padding:0 26px;height:64px;display:flex;align-items:center;gap:14px}
+  .topbar h1{margin:0;font-size:17px;letter-spacing:.1px}
+  .topbar .sub{color:var(--faint);font-size:12px;margin-top:2px}
+  .menu-btn{display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--muted)}
+  .chips{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .chipline{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;background:var(--surface);
+    border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:600;color:var(--muted)}
+  .chipline .dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+  .role-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+    background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;text-transform:capitalize}
+
+  .content{padding:24px 26px 40px;max-width:1340px;width:100%}
+  section.view{display:none}
+  section.view.active{display:block;animation:fadeIn .18s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  .sec-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 16px}
+  .sec-head h2{margin:0;font-size:15px;letter-spacing:.1px}
+  .sec-head .hint{color:var(--faint);font-size:12.5px}
+  .sec-head .grow{flex:1}
+
+  /* cards */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+    box-shadow:var(--shadow-sm);padding:18px}
+  .card .card-title{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:13px;font-weight:700}
+  .card .card-sub{color:var(--faint);font-size:12px;margin:0 0 14px}
+  .card-icon{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
+    background:var(--primary-soft);color:var(--primary);flex:0 0 auto}
+
+  /* KPI row */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .kpi{padding:16px 18px;position:relative;overflow:hidden}
+  .kpi .t{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--faint)}
+  .kpi .v{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+  .kpi .s{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .kpi .bar{position:absolute;left:0;right:0;bottom:0;height:3px}
+  .kpi.good .bar{background:var(--good)} .kpi.amber .bar{background:var(--amber)} .kpi.red .bar{background:var(--red)} .kpi.blue .bar{background:var(--primary)}
+  .trend-del{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .td-up{background:var(--red-soft);color:var(--red)}
+  .td-down{background:var(--good-soft);color:var(--good)}
+  .td-flat{background:var(--surface2);color:var(--faint);border:1px solid var(--border)}
+
+  /* status chips */
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:3px 10px;border-radius:999px;white-space:nowrap;line-height:1.5}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .chip.green,.chip.protected,.chip.closed{background:var(--good-soft);color:var(--good)}
+  .chip.protected{background:var(--amber-soft);color:var(--amber)}
+  .chip.closed{background:var(--red-soft);color:var(--red)}
+  .chip.blue{background:var(--primary-soft);color:var(--primary)}
+  .chip.grey{background:var(--surface2);color:var(--faint);border:1px solid var(--border)}
+  .chip.sensitive{background:var(--violet-soft);color:var(--violet)}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:var(--r-sm);
+    padding:9px 16px;font-weight:700;font-size:13px;background:var(--primary);color:#fff;transition:.15s}
+  .btn:hover{background:var(--primary-strong)}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn.ghost{background:var(--surface);border:1px solid var(--border2);color:var(--muted)}
+  .btn.ghost:hover{border-color:var(--text);color:var(--text)}
+  .btn.soft{background:var(--primary-soft);color:var(--primary)}
+  .btn.soft:hover{background:#dce7ff}
+  .btn.danger-soft{background:var(--red-soft);color:var(--red)}
+  .btn.sm{padding:6px 11px;font-size:12px}
+
+  /* dashboard grid */
+  .dashgrid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+  .stack{display:flex;flex-direction:column;gap:16px}
+
+  /* map */
+  .map-wrap{position:relative}
+  .map-wrap svg{display:block;width:100%;height:auto}
+  .map-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+    font-size:11.5px;color:var(--muted)}
+  .map-legend span{display:inline-flex;align-items:center;gap:6px}
+  .lg{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .lg.circ{border-radius:50%}
+  .lg.pin{background:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+
+  /* verdict list (dashboard) */
+  .vlist{list-style:none;margin:0;padding:0}
+  .vlist li{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .vlist li:last-child{border-bottom:0}
+  .vlist .nm{font-weight:600;font-size:13px}
+  .vlist .ws{color:var(--faint);font-size:11.5px}
+  .vlist .aqi{margin-left:auto;text-align:right}
+  .vlist .aqi b{font-size:15px;font-variant-numeric:tabular-nums}
+  .vlist .aqi small{display:block;color:var(--faint);font-size:11px}
+  .mini-ring{width:40px;height:40px;flex:0 0 auto}
+
+  /* activity/ledger mini */
+  .act{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto}
+  .act li{display:flex;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:12.5px}
+  .act li:last-child{border-bottom:0}
+  .act .seq{color:var(--faint);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;padding-top:1px}
+  .act .bdg{font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:6px;flex:0 0 auto;height:fit-content}
+  .act .bdg.decision{background:var(--primary-soft);color:var(--primary)}
+  .act .bdg.alert{background:var(--amber-soft);color:var(--amber)}
+  .act .bdg.morning_run{background:var(--violet-soft);color:var(--violet)}
+  .act .tx{min-width:0;flex:1}
+  .act .tx .ref{font-weight:600;color:var(--text)}
+  .act .tx .pl{color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .act .ts{color:var(--faint);font-size:11px;white-space:nowrap;flex:0 0 auto;margin-left:auto}
+
+  /* empty state */
+  .empty{border:1px dashed var(--border2);border-radius:var(--r);background:var(--surface2);
+    padding:18px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:12px}
+  .empty .ico{width:34px;height:34px;border-radius:9px;background:var(--primary-soft);color:var(--primary);
+    display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
+  /* banner */
+  .banner{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:var(--r);
+    background:var(--surface);padding:12px 14px;margin-bottom:16px;font-size:13px}
+  .banner .grow{flex:1}
+  .banner.ok{border-color:#BFE6CF;background:#F0FAF4}
+  .banner.bad{border-color:#F4C4C4;background:#FDF1F1}
+  .banner .check{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .banner.ok .check{background:var(--good);color:#fff}
+  .banner.bad .check{background:var(--red);color:#fff}
+
+  /* table */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--faint);
+    text-align:left;padding:0 10px 9px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap}
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--surface2)}
+  tbody tr.sel{background:var(--primary-soft)}
+  tbody td.see{color:var(--faint)}
+  .td-num{font-variant-numeric:tabular-nums;font-weight:700}
+  .sch-name{font-weight:700}
+  .sch-meta{color:var(--faint);font-size:11.5px}
+  .mini-spark{width:92px;height:26px;display:block}
+
+  /* detail */
+  .detail-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:start}
+  .hero-band{display:flex;gap:16px;align-items:center}
+  .hero-band .ring{width:92px;height:92px;flex:0 0 auto}
+  .hero-band h3{margin:0 0 3px;font-size:17px}
+  .hero-band .loc{color:var(--faint);font-size:12.5px;margin-bottom:8px}
+  .kv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+  .kv{padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm)}
+  .kv .k{font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .kv .v{font-size:15px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+  .reasons{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .reasons li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--surface2);
+    border:1px solid var(--line);border-radius:var(--r-sm);font-size:12.5px}
+  .reasons li .rid{flex:0 0 auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;
+    color:var(--primary);background:var(--primary-soft);padding:2px 7px;border-radius:6px}
+  .reasons li.off{opacity:.55}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .actions span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;
+    border-radius:8px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+
+  /* agent */
+  .agent-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+  .chat{display:flex;flex-direction:column;height:520px}
+  .chatlog{flex:1;overflow-y:auto;padding:2px 2px 8px;display:flex;flex-direction:column;gap:12px}
+  .bub{max-width:84%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .bub .meta{display:block;margin-top:6px;font-size:10.5px;color:var(--faint)}
+  .bub.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+  .bub.user .meta{color:#DCE7FF}
+  .bub.ai{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .bub.sys{align-self:center;background:var(--amber-soft);color:#8a5a10;border-radius:10px;font-size:12px}
+  .consent-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .sent-ok{background:var(--good-soft);color:var(--good)}
+  .awaiting{background:var(--amber-soft);color:var(--amber)}
+  .no-send{background:var(--surface2);color:var(--faint)}
+  .composer{border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;margin-top:12px}
+  .composer select,.composer input{border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;outline:none;background:var(--surface)}
+  .composer input{flex:1;min-width:0}
+  .composer select{max-width:200px}
+  .composer input:focus,.composer select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .quick button{background:none;border:1px solid var(--border2);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--muted);font-weight:600}
+  .quick button:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
+  .consent-card{margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12.5px;color:var(--muted)}
+  .consent-card b{color:var(--text)}
+
+  /* login overlay */
+  .login{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(1200px 600px at 15% -10%,#EAF1FF 0%,rgba(234,241,255,0) 55%),
+    radial-gradient(1000px 500px at 110% 110%,#EFECFC 0%,rgba(239,236,252,0) 50%),var(--bg)}
+  .login-card{width:420px;max-width:100%;background:var(--surface);border:1px solid var(--border);
+    border-radius:22px;box-shadow:var(--shadow);padding:28px}
+  .login-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .login-head .brand-mark{width:44px;height:44px;border-radius:13px}
+  .login-head b{font-size:18px}
+  .login-head small{display:block;color:var(--faint);font-weight:400;font-size:12px}
+  .login-sub{color:var(--muted);font-size:13px;margin:4px 0 16px;line-height:1.5}
+  .roles{display:grid;gap:8px;margin:14px 0}
+  .role-opt{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1.5px solid var(--border2);
+    border-radius:var(--r);cursor:pointer;transition:.15s}
+  .role-opt:hover{border-color:var(--primary)}
+  .role-opt.sel{border-color:var(--primary);background:var(--primary-soft)}
+  .role-opt .r-ico{width:30px;height:30px;border-radius:8px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .role-opt b{font-size:13.5px;text-transform:capitalize}
+  .role-opt small{display:block;color:var(--muted);font-size:11.5px;line-height:1.4}
+  .r-ico.p{background:var(--primary-soft);color:var(--primary)}
+  .r-ico.pc{background:var(--violet-soft);color:var(--violet)}
+  .r-ico.o{background:var(--amber-soft);color:var(--amber)}
+  textarea-holder{}
+  .field label{display:block;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);margin:14px 0 6px}
+  .field input{width:100%;border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;outline:none}
+  .field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .login-foot{display:flex;align-items:center;gap:10px;margin-top:18px}
+  .login-foot .grow{flex:1}
+  .login-hint{font-size:11.5px;color:var(--faint);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;line-height:1.6}
+  .login-hint b{color:var(--muted)}
+
+  /* ledger */
+  .feed{list-style:none;margin:0;padding:0}
+  .feed li{display:flex;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .feed li:last-child{border-bottom:0}
+  .feed .seq{font-family:ui-monospace,Consolas,monospace;color:var(--faint);font-size:11px;padding-top:2px;flex:0 0 auto}
+  .feed .body{flex:1;min-width:0}
+  .feed .body .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .feed .body .ref{font-weight:700;font-size:12.5px;font-family:ui-monospace,Consolas,monospace}
+  .feed pre{margin:7px 0 0;padding:8px 10px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;
+    font-size:11.5px;color:var(--muted);overflow-x:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Consolas,monospace}
+  .feed .ts{margin-left:auto;color:var(--faint);font-size:11px;white-space:nowrap}
+  .feed .hash{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:var(--faint)}
+
+  @media(max-width:980px){
+    .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .22s ease;box-shadow:var(--shadow)}
+    .sidebar.open{transform:none}
+    .menu-btn{display:inline-flex}
+    .dashgrid,.agent-grid,.detail-grid{grid-template-columns:1fr}
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:620px){
+    .kpi-row{grid-template-columns:1fr}
+    .content{padding:16px 14px 40px}
+    .topbar{padding:0 14px}
+    .chips .chipline.hide-sm{display:none}
+    .brand{display:none}
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="brand">FirstLight <span>●</span> Ship It</div>
-  <span class="chip">AWS LIVE</span>
-  <span class="chip gray">Cognito · Lambda · DynamoDB</span>
-  <span class="chip gray" id="rulesetChip"></span>
-  <span class="spacer"></span>
-  <div id="authArea"></div>
-</header>
 
-<main>
-  <div class="hero" id="loginView">
-    <div class="logo">A</div>
-    <h2>FirstLight cloud console</h2>
-    <p>The 6 AM on-call agent for the air a child breathes — running in AWS.
-    Sign in with one of the demo accounts below (Cognito handles the passwords).</p>
-    <form id="loginForm" style="text-align:left">
-      <label style="font-size:12.5px;color:var(--muted);display:block;margin:12px 0 4px">Username</label>
-      <input id="loginUser" autocomplete="username" placeholder="principal@firstlight.demo"/>
-      <label style="font-size:12.5px;color:var(--muted);display:block;margin:10px 0 4px">Password</label>
-      <input id="loginPass" type="password" autocomplete="current-password"/>
-      <div class="ca" id="loginMsg" style="color:var(--bad)"></div>
-      <button style="width:100%;margin-top:8px" id="loginBtn">Sign in</button>
-    </form>
-    <div class="accounts">
-      <div>Demo accounts (same personas as the local build):</div>
-      <div style="margin-top:6px"><code>parent@firstlight.demo</code> · Parent12345 — Meera, can ask, cannot send.</div>
-      <div><code>principal@firstlight.demo</code> · Principal123 — Mr.&nbsp;Rao, can send.</div>
-      <div><code>officer@firstlight.demo</code> · Officer1234 — Kapoor, can send + run the morning.</div>
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="brand-mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+      </div>
+      <div><b>FirstLight</b><small>6 AM, for the air a child breathes</small></div>
+    </div>
+    <p class="login-sub">Sign in with a seeded account. Every action on the console is gated by the account's role permission set — nothing more.</p>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--faint)">
+      <span>server</span><b id="loginhealth" style="color:var(--muted)">…</b>
+    </div>
+    <div class="roles" id="roles">
+      <div class="role-opt" data-role="parent" data-user="parent@firstlight.demo" data-pass="parent123">
+        <div class="r-ico p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+        <div><b>parent · Meera</b><small>Reads her child's school verdict and asks the 6 AM agent. Never sends.</small></div>
+      </div>
+      <div class="role-opt" data-role="principal" data-user="principal@firstlight.demo" data-pass="principal123">
+        <div class="r-ico pc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg></div>
+        <div><b>principal · Mr. Rao</b><small>Everything a parent can, plus dispatch and recall alerts for the school, and the outbox.</small></div>
+      </div>
+      <div class="role-opt" data-role="officer" data-user="officer@firstlight.demo" data-pass="officer123">
+        <div class="r-ico o"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"></path><path d="M12 3a9 9 0 1 0 9 9c0-.5 0-1-.07-1.49"></path></svg></div>
+        <div><b>officer · Kapoor</b><small>Runs the 6 AM morning, refreshes live fire data, reads the tamper-evident ledger, verifies the chain.</small></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>username</label>
+      <input id="username" autocomplete="username" placeholder="e.g. parent@firstlight.demo">
+    </div>
+    <div class="field">
+      <label>password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="password" style="font-family:inherit">
+    </div>
+    <div class="login-foot">
+      <div class="grow"></div>
+      <button class="btn" id="continuebtn">Sign in
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+    <p class="login-hint" id="hintCreds"><b>Demo accounts</b> (click a card to fill): <b>parent@firstlight.demo</b> / parent123 · <b>principal@firstlight.demo</b> / principal123 · <b>officer@firstlight.demo</b> / officer123. Open role minting (<code>/api/auth/issue</code>) is closed — Ship It uses Cognito, see <b>sam/template.yaml</b>.</p>
+  </div>
+</div>
+
+<div class="app hidden" id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+      </div>
+      <div><b>FirstLight</b><small>console <b id="sidever">0.2.0</b></small></div>
+    </div>
+    <nav>
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item active" data-view="dashboard">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M3 9h18M9 21V9"></path></svg>
+        Dashboard</button>
+      <button class="nav-item" data-view="schools">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        Schools</button>
+      <button class="nav-item" data-view="agent">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M2 20h20"></path></svg>
+        6 AM Agent</button>
+      <div class="nav-label" id="opslabel">Operations</div>
+      <button class="nav-item hidden" data-view="outbox" id="nav-outbox">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Outbox</button>
+      <button class="nav-item" data-view="ledger" id="nav-ledger">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="3"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Ledger</button>
+    </nav>
+    <div class="session">
+      <div class="who">
+        <div class="av" id="av">U</div>
+        <div style="min-width:0"><b id="sessionSub">—</b><span id="sessionRole">—</span></div>
+      </div>
+      <div class="sig">
+        <em><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--good)"></span> session active</em>
+        <button id="logoutbtn" title="Sign out">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menubtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
+      </button>
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="sub" id="pageSub">—</div>
+      </div>
+      <div class="chips">
+        <span class="chipline" id="chipDate" title="morning being decided">
+          <span class="dot" style="background:var(--primary)"></span>
+          <span id="chipDateTxt">—</span>
+        </span>
+        <span class="chipline hide-sm" id="chipSource" title="fire data provenance — frozen scenario vs live NASA FIRMS">
+          <span class="dot" id="chipSourceDot"></span>
+          <span id="chipSourceTxt">—</span>
+        </span>
+        <span class="chipline hide-sm" id="chipWind" title="meteorological wind (blowing from)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"></path><path d="M9.6 4.6A2 2 0 1 1 11 8H2"></path><path d="M12.6 19.4A2 2 0 1 0 14 16H2"></path></svg>
+          <span id="chipWindTxt">—</span>
+        </span>
+        <span class="chipline hide-sm" id="chipRuleset" title="ruleset version">
+          <span class="dot" style="background:var(--good)"></span>
+          <span id="chipRulesetTxt">—</span>
+        </span>
+        <span class="role-pill" id="rolePill">—</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view active" id="view-dashboard">
+        <div class="sec-head">
+          <h2>This morning</h2>
+          <span class="hint" id="dashSub">—</span>
+          <div class="grow"></div>
+          <button class="btn soft sm hidden" id="refreshFires" title="officer only — fetch live NASA FIRMS fires into the scenario">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Refresh fire data
+          </button>
+          <button class="btn soft sm" id="runMorning" title="officer only">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Run 6 AM morning
+          </button>
+        </div>
+
+        <div class="banner" id="emptyBanner" style="display:none"></div>
+
+        <div class="kpi-row" id="kpiRow"></div>
+
+        <div class="dashgrid">
+          <div class="stack">
+            <div class="card">
+              <p class="card-title"><span class="card-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg>
+              </span>Scenario</p>
+              <p class="card-sub" id="scenSub">Frozen NCR morning · 7 stations · stubble fires upwind of the wind shadow.</p>
+              <div class="map-wrap" id="mapWrap"></div>
+              <div class="map-legend">
+                <span><span class="lg pin"></span>school</span>
+                <span><span class="lg circ" style="background:#B9C3D8"></span>station</span>
+                <span><span class="lg" style="background:var(--amber)"></span>active fire</span>
+                <span><span class="lg" style="border:1.5px solid var(--amber);background:none"></span>contained</span>
+                <span><span class="lg" style="background:var(--primary);border-radius:50%;height:3px;width:16px"></span>wind 310°</span>
+              </div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <p class="card-title"><span class="card-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+              </span>School verdicts</p>
+              <p class="card-sub">Today's deterministic decision per school.</p>
+              <div id="vlist"></div>
+            </div>
+            <div class="card" id="activityCard">
+              <p class="card-title"><span class="card-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </span>Recent activity</p>
+              <p class="card-sub">Tamper-evident ledger feed.</p>
+              <ul class="act" id="activity"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCHOOLS ============ -->
+      <section class="view" id="view-schools">
+        <div class="sec-head">
+          <h2>Schools</h2>
+          <span class="hint" id="schoolsSub">—</span>
+          <div class="grow"></div>
+        </div>
+        <div class="detail-grid">
+          <div class="card" style="padding:14px 14px 4px">
+            <div class="table-wrap" id="schoolTableWrap"></div>
+          </div>
+          <div class="stack">
+            <div class="card" id="detailCard">
+              <p class="card-title"><span class="card-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"></path><path d="M8 12h8M12 8v8"></path></svg>
+              </span>Decision detail</p>
+              <p class="card-sub">Select a school to inspect its evidence trail.</p>
+              <div id="detailBody"><div class="empty"><span class="ico">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </span>No school selected.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ AGENT ============ -->
+      <section class="view" id="view-agent">
+        <div class="sec-head">
+          <h2>6 AM agent</h2>
+          <span class="hint">Evidence-first. The agent narrates the decision — it never guesses, and it never sends unless you say <b>send it</b> and confirm in the same turn.</span>
+        </div>
+        <div class="agent-grid">
+          <div class="card chat">
+            <div class="chatlog" id="chatlog"></div>
+            <div class="composer">
+              <select id="agSchool"></select>
+              <input id="agMsg" placeholder="e.g. is today safe for school?">
+              <button class="btn" id="agSend">Ask</button>
+            </div>
+            <div class="quick" id="quick"></div>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <p class="card-title"><span class="card-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              </span>Consent gate</p>
+              <p class="card-sub">Alerting only fires on explicit confirmation — a question never sends.</p>
+              <div id="consentBox"></div>
+            </div>
+            <div class="card">
+              <p class="card-title"><span class="card-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="3"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>Last certified send</p>
+              <p class="card-sub">Each send is signed and appended to the ledger.</p>
+              <div id="lastSent"><div class="empty"><span class="ico">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </span>No alert sent in this session.</div></div>
+              <div class="consent-card"><b>How sending works.</b> Say “send the alert”, and the agent holds. Then say “yes, send it” in the same turn and the signed certificate goes out. Anything phrased as a question (<b>would you send it?</b>) is treated as a question — nothing is sent.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ OUTBOX ============ -->
+      <section class="view" id="view-outbox">
+        <div class="sec-head">
+          <h2>Delivery outbox</h2>
+          <span class="hint">Every alert actually sent, with its channel receipt. Nothing is only printed to a log.</span>
+          <div class="grow"></div>
+          <button class="btn ghost sm" id="outboxRefresh">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Refresh</button>
+        </div>
+        <div id="outboxList">
+          <div class="empty"><span class="ico">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </span><span>Nothing delivered yet — run the morning or send as principal/officer. Alerts show their channel + receipt.</span></div>
+        </div>
+      </section>
+
+      <!-- ============ LEDGER ============ -->
+      <section class="view" id="view-ledger">
+        <div class="sec-head">
+          <h2>Ledger</h2>
+          <span class="hint" id="ledgerSub">—</span>
+          <div class="grow"></div>
+          <button class="btn ghost sm" id="ledgerRefresh">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Refresh</button>
+          <button class="btn sm" id="ledgerVerify">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Verify tamper chain
+          </button>
+        </div>
+        <div class="banner" id="verifyBanner" style="display:none"></div>
+        <div class="card">
+          <p class="card-title"><span class="card-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="3"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </span>Event chain</p>
+          <p class="card-sub">Append-only, SHA-256 hash-chained. Every row locks in the one before it.</p>
+          <ul class="feed" id="feed"></ul>
+        </div>
+      </section>
+
     </div>
   </div>
-
-  <div class="card hidden" id="appView">
-    <div class="row" style="gap:8px">
-      <h2 style="margin-bottom:0">FirstLight cloud console</h2>
-      <span class="tag blue" id="roleTag">…</span>
-      <span class="spacer"></span>
-    </div>
-    <div class="row" style="margin-top:14px;gap:8px">
-      <button id="tabMorning">Run the morning</button>
-      <button class="ghost" id="tabAgent">Agent</button>
-      <button class="ghost" id="tabStatus">School status</button>
-    </div>
-
-    <section id="viewMorning">
-      <div class="sub" style="margin-top:12px">Frozen 2026-10-08 scenario, decided by the same deterministic engine as the local build — verdicts are byte-identical.</div>
-      <div class="row">
-        <button id="runMorning">Run morning → decide all 7 schools</button>
-        <span id="morningStatus" style="font-size:12.5px;color:var(--muted)"></span>
-      </div>
-      <div class="grid" id="decisions"></div>
-      <div style="margin-top:18px"><b style="font-size:13px">Alert receipts</b></div>
-      <div id="alerts"></div>
-    </section>
-
-    <section id="viewAgent" class="hidden">
-      <div class="sub" style="margin-top:12px">Ask the same 6 AM agent. A question (“would you send it?”) never sends; an explicit “yes, send it” dispatches with a signed receipt.</div>
-      <div class="chat" id="chatLog"></div>
-      <div class="row" style="margin-top:12px;gap:8px">
-        <label style="font-size:12.5px;color:var(--muted)">School
-          <select id="genSchool"></select>
-        </label>
-      </div>
-      <div class="sendbar">
-        <input id="talkInput" placeholder="is today safe for school?  ·  why?  ·  yes, send it"/>
-        <button id="talkSend">Ask</button>
-      </div>
-    </section>
-
-    <section id="viewStatus" class="hidden">
-      <div class="sub" style="margin-top:12px">Latest persisted decision per school from DynamoDB.</div>
-      <div class="grid" id="statusGrid"></div>
-    </section>
-  </div>
-</main>
+</div>
 
 <script>
-const API_BASE="__API_BASE__";
-const SCHOOLS=[
- {id:"s-avini",name:"Ramjas P. Block, Ashok Vihar"},
- {id:"s-apj",name:"CPM Public School, Pusa Road"},
- {id:"s-dwarka",name:"DPS, Dwarka Sector 12"},
- {id:"s-guard",name:"GGSSS, ITO Crossing"},
- {id:"s-gurugram",name:"St. Andrews, Gurugram"},
- {id:"s-noida",name:"Pearl Academy, Noida"},
- {id:"s-spring",name:"Spring Meadow, Shadipur"}
-];
-const $=s=>document.querySelector(s);
-const byId=Object.fromEntries(SCHOOLS.map(s=>[s.id,s.name]));
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const levelTag=l=>l==="CLOSED"?'<span class="tag bad">CLOSED</span>':l==="PROTECTED"?'<span class="tag warn">PROTECTED</span>':'<span class="tag good">SAFE</span>';
-function parseJwt(t){const p=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(decodeURIComponent(escape(atob(p+"=".repeat((4-p.length%4)%4)))))}
-function token(){return sessionStorage.getItem("id_token")}
-function claims(){const t=token();return t?parseJwt(t):null}
-function roleOf(c){const e=(c.email||"").split("@")[0]||"";return e==="principal"?"principal":e==="officer"?"officer":"parent"}
-async function login(){
- const u=$("#loginUser").value.trim(), p=$("#loginPass").value;
- const btn=$("#loginBtn");btn.disabled=true;$("#loginMsg").textContent="";
- try{
-  const r=await fetch(API_BASE+"/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
-  const j=await r.json().catch(()=>null);
-  if(!r.ok)throw new Error((j&&j.error)||("HTTP "+r.status));
-  sessionStorage.setItem("id_token",j.token);location.reload();
- }catch(e){$("#loginMsg").textContent=e.message}finally{btn.disabled=false}
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const API = window.__API__ || "";
+
+if (window.__CREDS__) {
+  document.querySelectorAll(".role-opt").forEach(opt => {
+    const c = window.__CREDS__[opt.dataset.role];
+    if (c) { if (c.username) opt.dataset.user = c.username; if (c.password) opt.dataset.pass = c.password; }
+  });
+  const hint = $("hintCreds");
+  if (hint && window.__CREDS__.__hint) hint.innerHTML = window.__CREDS__.__hint;
+}
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const timeAgo = (iso) => {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return "";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 5) return "now";
+  if (s < 60) return s + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+};
+
+/* ---------- state ---------- */
+const state = {
+  token: null, role: "parent", sub: "demo-user",
+  health: {}, inputs: null, schools: [],
+  decisions: {},        // schoolId -> latest saved row {level:0|1|2,...}
+  full: {},             // schoolId -> full decision dict (run/talk)
+  ledger: [],
+  outbox: [],
+  view: "dashboard",
+  selected: null,
+  lastIntent: null, lastConsent: null,
+  trLoaded: null,       // schoolId whose transcript is shown in the chat
+};
+
+const BAND_HEX = {"Good":"#2eb872","Satisfactory":"#a3c000","Moderate":"#f7d800","Poor":"#ea8a00","Very Poor":"#c04a00","Severe":"#8a1320"};
+const LEVEL = ["GREEN","PROTECTED","CLOSED"];
+
+function levelInfo(v) {
+  const n = (v === 0 || v === 1 || v === 2) ? LEVEL[v] : String(v);
+  const cls = {GREEN:"green",PROTECTED:"protected",CLOSED:"closed"}[n] || "grey";
+  return {name:n, cls};
+}
+const chip = (v, label) => { const l = levelInfo(v); return `<span class="chip ${l.cls}"><span class="dot"></span>${label || l.name}</span>`; };
+const bandHex = (label) => BAND_HEX[label] || "#98A2B3";
+const compass = (deg) => {
+  const d = ((deg % 360) + 360) % 360;
+  const names = [["N",337.5,22.5],["NE",22.5,67.5],["E",67.5,112.5],["SE",112.5,157.5],["S",157.5,202.5],["SW",202.5,247.5],["W",247.5,292.5],["NW",292.5,360]];
+  return names.find(n => (n[2] > n[1] ? d >= n[1] && d < n[2] : d >= n[1] || d < n[2]))[0];
+};
+
+/* ---------- api ---------- */
+async function api(method, path, body) {
+  const opts = {method, headers: {}};
+  if (state.token) opts.headers["Authorization"] = "Bearer " + state.token;
+  if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const r = await fetch(API + path.replace(/^\/api/, ""), opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.status + " " + r.statusText);
+  return data;
 }
 
-async function api(path,method,body){
- const r=await fetch(API_BASE+path,{method:method||"GET",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token()},body:body?JSON.stringify(body):undefined});
- if(r.status===401){sessionStorage.removeItem("id_token");location.reload();throw new Error("session expired")}
- const j=await r.json().catch(()=>null);
- if(!r.ok)throw new Error((j&&(j.error||j.message))||"HTTP "+r.status);
- return j;
+/* ---------- icons ---------- */
+const SVG = {
+  sun: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>',
+  shield: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
+  smoke: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zm20-1v8"></path></svg>',
+};
+
+/* ---------- rings & sparklines ---------- */
+function ringSvg(aqi, hex, size) {
+  const r = 30, c = 2 * Math.PI * r;
+  const frac = Math.max(0, Math.min(1, aqi / 500));
+  const off = c * (1 - frac);
+  return `<svg class="mini-ring" width="${size}" height="${size}" viewBox="0 0 72 72">
+    <circle cx="36" cy="36" r="${r}" fill="none" stroke="#EEF1F7" stroke-width="7"/>
+    <circle cx="36" cy="36" r="${r}" fill="none" stroke="${hex}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 36 36)"/>
+    <text x="36" y="41" text-anchor="middle" font-size="17" font-weight="800" fill="#151C36" font-family="Inter,system-ui,sans-serif">${Math.round(aqi)}</text>
+  </svg>`;
 }
-let morningAlerts=[];
-async function runMorning(){
- const btn=$("#runMorning");btn.disabled=true;$("#morningStatus").textContent="deciding…";
- try{
-  const r=await api("/morning","POST",{});
-  morningAlerts=(r.alerts||[]).slice().reverse();
-  $("#morningStatus").textContent=`${r.decisions.length} decisions · ${r.alerts.length} alerts · by ${r.by.slice(0,8)}`;
-  $("#decisions").innerHTML=r.decisions.map(d=>`<div class="school"><div class="row" style="gap:6px"><b>${esc(byId[d.schoolId]||d.schoolId)}</b>${levelTag(d.levelName)}</div><div class="meta">${esc(d.bandLabel)} · AQI ${esc(d.aqiEffective)} · GRAP ${d.grapStage} · plume ${d.plumeScore}/3 · ${esc(d.trend)}</div><div class="ca">${esc((d.reasons||[]).filter(x=>x.applied).slice(0,3).map(x=>x.ruleId).join(" · "))}</div></div>`).join("");
-  renderAlerts();
- }catch(e){$("#morningStatus").textContent=e.message}finally{btn.disabled=false}
+function heroRingSvg(aqi, hex) {
+  const r = 40, c = 2 * Math.PI * r;
+  const off = c * (1 - Math.max(0, Math.min(1, aqi / 500)));
+  return `<svg class="ring" width="96" height="96" viewBox="0 0 96 96">
+    <circle cx="48" cy="48" r="${r}" fill="none" stroke="#EEF1F7" stroke-width="9"/>
+    <circle cx="48" cy="48" r="${r}" fill="none" stroke="${hex}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 48 48)"/>
+    <text x="48" y="53" text-anchor="middle" font-size="24" font-weight="800" fill="#151C36" font-family="Inter,system-ui,sans-serif">${Math.round(aqi)}</text>
+  </svg>`;
 }
-function renderAlerts(){$("#alerts").innerHTML=morningAlerts.map(a=>`<div class="alert">${levelTag(a.level)} ${esc(byId[a.schoolId]||a.schoolId)}<div class="r">receipt ${esc(a.receipt||"—")}</div></div>`).join("")||'<div class="ca">Run the morning first.</div>'}
-async function talk(text){
- const log=$("#chatLog");
- log.insertAdjacentHTML("beforeend",`<div class="msg me"><div class="who">you</div>${esc(text)}</div>`);
- const r=await api("/talk","POST",{text: text, school_id:$("#genSchool").value});
- const c=r.consent||{};
- const tag=c.maySend&&c.authorized===false?'<span class="tag warn">role cannot send</span>':c.maySend?'<span class="tag good">certified send ✓</span>':c.asked&&!c.confirmed?'<span class="tag blue">awaiting confirmation</span>':c.pendingSend?'<span class="tag warn">send armed</span>':'<span class="tag bad">no-send</span>';
- let extra="";
- if(r.sent&&r.sent.delivery)extra=`<div class="r">${tag} delivered via <b>${esc(r.sent.delivery.channel)}</b> → receipt <b>${esc(r.sent.delivery.receipt)}</b></div>`;
- else if(r.consent&&(r.consent.maySend!==undefined))extra=`<div class="r">${tag} intent ${esc(r.intent)}</div>`;
- log.insertAdjacentHTML("beforeend",`<div class="msg"><div class="who">firstlight agent</div>${esc(r.reply)}${extra}</div>`);
- log.scrollTop=log.scrollHeight;
+function sparkline(history, today, hex) {
+  const pts = (history || []).concat(today != null ? [today] : []);
+  if (!pts.length) return "";
+  const w = 92, h = 26, pad = 3;
+  const lo = Math.min.apply(null, pts), hi = Math.max.apply(null, pts);
+  const span = (hi - lo) || 1;
+  const xy = pts.map((v, i) =>
+    `${pad + (i / (pts.length - 1)) * (w - 2 * pad)},${h - pad - ((v - lo) / span) * (h - 2 * pad)}`).join(" ");
+  return `<svg class="mini-spark" viewBox="0 0 ${w} ${h}">
+    <polyline points="${xy}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
 }
-async function renderStatus(){
- $("#statusGrid").innerHTML=SCHOOLS.map(s=>`<div class="school" id="st-${s.id}"><b>${esc(s.name)}</b><div class="meta">${esc(s.id)} · loading…</div></div>`).join("");
- for(const s of SCHOOLS){
-  try{const r=await api("/status?schoolId="+s.id);
-   const el=$("#st-"+s.id);const d=r.decision;
-   el.innerHTML=`<b>${esc(s.name)}</b>${levelTag(d.levelName)}<div class="meta">${esc(d.bandLabel)} · AQI ${esc(d.aqiEffective)} · GRAP ${d.grapStage}</div><div class="ca">plume ${d.plumeScore}/3 · ${esc(d.trend)}</div>`;
-  }catch(e){const el=$("#st-"+s.id);if(el)el.innerHTML=`<b>${esc(s.name)}</b><div class="meta">error: ${esc(e.message)}</div>`}
- }
+
+/* ---------- map ---------- */
+function scenarioMap(inputs) {
+  const schools = inputs.schools, stations = inputs.stations, fires = inputs.fires;
+  const all = schools.concat(stations).concat(fires);
+  const lats = all.map(x => x.lat), lons = all.map(x => x.lon);
+  const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+  const minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
+  const P = 0.06;
+  const x = lon => 8 + ((lon - minLon) / (maxLon - minLon || 1)) * (384 - 16);
+  const y = lat => 8 + (1 - ((lat - minLat) / (maxLat - minLat || 1))) * (288 - 16);
+  const grid = [];
+  for (let i = 0; i <= 4; i++) {
+    const gx = 8 + i * (384 - 16) / 4, gy = 8 + i * (288 - 16) / 4;
+    grid.push(`<path d="M${gx} 8 V280" stroke="#EEF1F7" stroke-width="1"/><path d="M8 ${gy} H384" stroke="#EEF1F7" stroke-width="1"/>`);
+  }
+  const fireDots = fires.map(f => f.status === "active"
+    ? `<circle cx="${x(f.lon)}" cy="${y(f.lat)}" r="5" fill="var(--amber)" stroke="#fff" stroke-width="1.5"/>`
+    : `<circle cx="${x(f.lon)}" cy="${y(f.lat)}" r="5" fill="none" stroke="var(--amber)" stroke-width="1.5"/>`).join("");
+  const fireLabs = fires.slice(0, 4).map(f =>
+    `<text x="${x(f.lon)}" y="${y(f.lat) - 9}" text-anchor="middle" font-size="8.5" fill="#8B96AD" font-family="Inter,system-ui">${esc(f.district)}</text>`).join("");
+  const stationDots = stations.map(s =>
+    `<rect x="${x(s.lon) - 3}" y="${y(s.lat) - 3}" width="6" height="6" rx="1.5" fill="#B9C3D8"/>`).join("");
+  const schoolPins = schools.map(s =>
+    `<g><circle cx="${x(s.lon)}" cy="${y(s.lat)}" r="4.5" fill="var(--primary)" stroke="#fff" stroke-width="1.5"/></g>`).join("");
+  const d = inputs.wind.directionDeg;
+  const toward = (d + 180) % 360;
+  const rot = 90 - toward;
+  const wcx = x(stations.length ? (stations.reduce((a, s) => a + s.lon, 0) / stations.length) : 77.2);
+  const wcy = y(stations.length ? (stations.reduce((a,s)=>a+s.lat,0)/stations.length) : 28.6);
+  return `
+  <svg viewBox="0 0 392 296" role="img" aria-label="Scenario map: NCR schools and stations, Punjab-Haryana stubble fires, wind from 310 degrees">
+    ${grid.join("")}
+    ${fireLabs}${fireDots}
+    <g transform="translate(${wcx},${wcy}) rotate(${rot})">
+      <path d="M-26 0 L18 0" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M12 -5 L20 0 L12 5" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="${wcx - 34}" y="${wcy - 12}" font-size="8" fill="var(--primary)" font-weight="700" font-family="Inter,system-ui">wind ${d}°</text>
+    <text x="12" y="24" font-size="10" fill="#B9C3D8" font-weight="700" font-family="Inter,system-ui">NW stubble corridor — Haryana · Punjab</text>
+    ${stationDots}
+    ${schoolPins}
+  </svg>`;
 }
-function show(v){
- for(const k of["viewMorning","viewAgent","viewStatus"])$("#"+k).classList.toggle("hidden",k!==v);
- $("#tabMorning").classList.toggle("ghost",v!=="viewMorning");
- $("#tabAgent").classList.toggle("ghost",v!=="viewAgent");
- $("#tabStatus").classList.toggle("ghost",v!=="viewStatus");
+
+/* ---------- views: navigation ---------- */
+const NAV = {"dashboard":["Dashboard","Deterministic verdicts for every school, decided at 6 AM."],
+             "schools":["Schools","Inspect each school's verdict, evidence and actions."],
+             "agent":["6 AM agent","Ask questions; the agent narrates the decision, never invents."],
+             "outbox":["Delivery outbox","Alerts that actually went out — channel and receipt for each."],
+             "ledger":["Ledger","Append-only audit of decisions, alerts and runs."]};
+const RENDER = {dashboard: () => renderDashboard(), schools: () => renderSchoolsView(), agent: () => renderAgent(), outbox: () => renderOutbox(), ledger: () => renderLedger()};
+function setView(v) {
+  if (v === "ledger" && state.role !== "officer") return;
+  if (v === "outbox" && state.role === "parent") return;
+  state.view = v;
+  document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.view === v));
+  document.querySelectorAll("section.view").forEach(s => s.classList.remove("active"));
+  $("view-" + v).classList.add("active");
+  $("pageTitle").textContent = NAV[v][0];
+  $("pageSub").textContent = NAV[v][1];
+  $("sidebar").classList.remove("open");
+  RENDER[v] && RENDER[v]();
 }
-function boot(){
- $("#loginForm").onsubmit=e=>{e.preventDefault();login();};
- if(token()){
-  $("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");
-  const c=claims();const role=roleOf(c);
-  $("#roleTag").textContent=role+" · "+c.email;
-  $("#authArea").innerHTML=`<span class="chip gray">${esc(c.email)}</span> <a class="chip gray" style="text-decoration:none" href="#" id="signOut">sign out</a>`;
-  $("#signOut").onclick=e=>{e.preventDefault();sessionStorage.removeItem("id_token");location.reload()};
-   $("#tabMorning").disabled=false;
-  $("#runMorning").onclick=runMorning;
-  $("#genSchool").innerHTML=SCHOOLS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
-  $("#talkSend").onclick=async()=>{const t=$("#talkInput").value.trim();if(!t)return;try{await talk(t);$("#talkInput").value=""}catch(e){const l=$("#chatLog");l.insertAdjacentHTML("beforeend",`<div class="msg"><div class="who">error</div>${esc(e.message)}</div>`);}};
-  $("#talkInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("#talkSend").click()});
-  $("#tabMorning").onclick=()=>show("viewMorning");$("#tabAgent").onclick=()=>show("viewAgent");$("#tabStatus").onclick=()=>{show("viewStatus");renderStatus()};
+document.querySelectorAll(".nav-item").forEach(b =>
+  b.addEventListener("click", () => setView(b.dataset.view)));
+$("menubtn").onclick = () => $("sidebar").classList.toggle("open");
+$("logoutbtn").onclick = () => location.reload();
+
+/* ---------- decide/full helpers ---------- */
+function decisionFor(schoolId) {
+  const f = state.full[schoolId];
+  if (f) return f;
+  const s = state.decisions[schoolId];
+  if (!s) return null;
+  if (s.levelName !== undefined) {
+    return {
+      schoolId, date: s.date, level: s.level, levelName: s.levelName,
+      aqiEffective: s.aqiEffective, bandLabel: s.bandLabel, bandHex: s.bandHex || bandHex(s.bandLabel),
+      grapStage: s.grapStage, firesUpwind: s.firesUpwind, plumeScore: s.plumeScore,
+      trend: s.trend, reasons: s.reasons || [], actions: s.actions || [], evidence: s.evidence || {},
+    };
+  }
+  return {
+    schoolId, date: s.date, level: s.level, levelName: LEVEL[s.level] || String(s.level),
+    aqiEffective: s.aqi_effective, bandLabel: s.band_label, bandHex: bandHex(s.band_label),
+    grapStage: s.grap_stage, firesUpwind: s.fires_upwind, plumeScore: s.plume_score,
+    trend: s.trend, reasons: s.reasons || [], actions: s.actions || [], evidence: s.evidence || {},
+  };
 }
+const trendMeta = {
+  rising:   ["Rising", "td-up"],
+  collapsing: ["Collapsing", "td-up"],
+  improving: ["Improving", "td-down"],
+  stable:   ["Stable", "td-flat"],
+};
+function trendChip(t) { const m = trendMeta[t] || ["—","td-flat"]; return `<span class="trend-del ${m[1]}">${m[0]}</span>`; }
+
+/* ---------- dashboard ---------- */
+function renderDashboard() {
+  const ins = state.inputs;
+  if (!ins) { $("kpiRow").innerHTML = ""; $("vlist").innerHTML = ""; return; }
+  const n = state.schools.length;
+  const dec = state.schools.map(s => decisionFor(s.id)).filter(Boolean);
+  const cnt = {0:0,1:0,2:0};
+  dec.forEach(d => { cnt[d.level] = (cnt[d.level] || 0) + 1; });
+  const maxAqi = dec.length ? dec.reduce((m, d) => (d.aqiEffective > m.aqiEffective ? d : m), dec[0]) : null;
+  $("dashSub").textContent = `${ins.date} · ${ins.stations.length} stations · ${ins.fires.length} fires · wind ${ins.wind.directionDeg}° / ${ins.wind.speedKmh} km/h (${compass(ins.wind.directionDeg)})`;
+
+  // provenance: label every input with where it came from and when it was observed
+  const src = ins.source || {};
+  const latest = a => (a.length ? a[a.length - 1] : "");
+  const stT = latest(ins.stations.map(s => s.lastUpdatedUtc).filter(Boolean));
+  const frT = latest(ins.fires.map(f => f.detectedUtc).filter(Boolean));
+  const winT = ins.wind.observedUtc || "";
+  const hhmm = iso => (iso ? iso.slice(11, 16) : "—");
+  const live = src.source === "firms-live";
+  const provTxt = (live ? "Live source — " + (src.label || "NASA FIRMS") : "Frozen scenario snapshot")
+    + ` · stations ${hhmm(stT)} · fires detected ${hhmm(frT)} · wind ${hhmm(winT)} UTC`
+    + (src.fallback ? " · live refresh failed, fell back to frozen" : "");
+  $("scenSub").textContent = provTxt;
+  $("scenSub").title = src.fetchedAt ? `last refresh ${src.fetchedAt}` : provTxt;
+
+  const kpi = [
+    {cls:"good", t:"Schools open", v: cnt[0] || 0, s:`of ${n} decided ${dec.length ? "· " + dec.length : ""}`.trim()},
+    {cls:"amber", t:"Protected", v: cnt[1] || 0, s:"open with measures"},
+    {cls:"red", t:"Closed", v: cnt[2] || 0, s:"classes online"},
+    {cls:"blue", t:"Highest AQI", v: maxAqi ? Math.round(maxAqi.aqiEffective) : "—", s: maxAqi ? `${maxAqi.bandLabel} · ${maxAqi.schoolId}` : "no decisions yet", color: maxAqi ? maxAqi.bandHex : undefined},
+  ];
+  $("kpiRow").innerHTML = kpi.map(k =>
+    `<div class="card kpi ${k.cls}">
+       <div class="t">${k.t}</div>
+       <div class="v" ${k.color ? `style="color:${k.color}"` : ""}>${k.v}</div>
+       <div class="s">${k.s}</div>
+       <div class="bar"></div>
+     </div>`).join("");
+
+  if (!dec.length) {
+    $("emptyBanner").style.display = "";
+    $("emptyBanner").innerHTML = `<span class="check" style="background:var(--primary-soft);color:var(--primary);width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">${SVG.sun}</span>
+      <div class="grow"><b>No verdicts yet.</b> ${state.role === "officer" ? "Run the 6 AM morning to decide every school and write the ledger." : "Ask the 6 AM agent about a school to see its verdict, or have an officer run the morning."}</div>`;
+  } else {
+    $("emptyBanner").style.display = "none";
+  }
+
+  $("vlist").innerHTML = state.schools.length ? `<ul class="vlist">${state.schools.map(s => {
+    const d = decisionFor(s.id);
+    if (!d) return `<li><div style="min-width:0"><div class="nm">${esc(s.name)}</div><div class="ws">${esc(s.ward)} · no decision yet</div></div>
+      <span class="aqi"><span class="chip grey">—</span></span></li>`;
+    return `<li>
+      <div style="min-width:0"><div class="nm">${esc(s.name)}</div><div class="ws">${esc(s.ward)} · ${d.bandLabel}</div></div>
+      ${ringSvg(d.aqiEffective, d.bandHex, 42)}
+      <div class="aqi"><b style="color:${d.bandHex}">${Math.round(d.aqiEffective)}</b><small>AQI</small></div>
+      ${chip(d.level)}
+    </li>`;
+  }).join("")}</ul>` : `<div class="empty"><span class="ico">${SVG.smoke}</span>No schools loaded.</div>`;
+
+  $("mapWrap").innerHTML = scenarioMap(ins);
+  if (state.role === "officer") { $("activityCard").classList.remove("hidden"); renderActivity(); }
+  else $("activityCard").classList.add("hidden");
 }
-boot();
+function renderActivity() {
+  const rows = state.ledger.slice(0, 10);
+  $("activity").innerHTML = rows.length ? rows.map(r =>
+    `<li><span class="seq">#${r.seq}</span><span class="bdg ${r.kind}">${esc(r.kind)}</span>
+     <span class="tx"><span class="ref">${esc(r.ref)}</span><span class="pl">${esc(JSON.stringify(r.payload).slice(0, 46))}</span></span>
+     <span class="ts">${timeAgo(r.ts)}</span></li>`).join("")
+    : `<li style="color:var(--faint)">Ledger is empty — run the morning.</li>`;
+}
+
+/* ---------- schools list + detail ---------- */
+function renderSchoolsTable() {
+  $("schoolsSub").textContent = state.schools.length ? `${state.schools.length} schools · ${state.inputs ? state.inputs.date : ""}` : "—";
+  const rows = state.schools.map(s => {
+    const d = decisionFor(s.id);
+    const hist = state.inputs && state.inputs.historyAqi ? (state.inputs.historyAqi[s.id] || []) : [];
+    const sel = state.selected === s.id ? " sel" : "";
+    const aqiCell = d ? `<span class="td-num" style="color:${d.bandHex}">${Math.round(d.aqiEffective)}</span><span style="color:var(--faint);font-size:11px"> ${esc(d.bandLabel)}</span>` : '<span style="color:var(--faint)">—</span>';
+    return `<tr class="${sel}" data-id="${esc(s.id)}">
+      <td><div class="sch-name">${esc(s.name)}</div><div class="sch-meta">${esc(s.ward)} · opens ${esc(s.opensAt)}</div></td>
+      <td>${d ? chip(d.level) : '<span class="chip grey">no decision</span>'}</td>
+      <td class="td-num">${s.strength}</td>
+      <td>${s.hasSensitiveGroup ? '<span class="chip sensitive">sensitive</span>' : '<span class="chip grey">—</span>'}</td>
+      <td>${aqiCell}</td>
+      <td>${d ? trendChip(d.trend) : "<span>—</span>"}</td>
+      <td>${d ? `<span class="td-num">${d.plumeScore != null ? d.plumeScore.toFixed(2) : "—"}</span>` : "<span>—</span>"}</td>
+      <td>${d ? `<span class="td-num">${d.firesUpwind != null ? d.firesUpwind : "—"}</span>` : "<span>—</span>"}</td>
+      <td>${d ? sparkline(hist, d.aqiEffective, d.bandHex) : ""}</td>
+      <td class="see"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></td>
+    </tr>`;
+  }).join("");
+  $("schoolTableWrap").innerHTML = `<table>
+    <thead><tr><th>School</th><th>Verdict</th><th>Students</th><th>Group</th><th>AQI</th><th>Trend</th><th>Plume</th><th>Fires↑</th><th>7-day</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+  $("schoolTableWrap").querySelectorAll("tr[data-id]").forEach(tr =>
+    tr.addEventListener("click", () => { state.selected = tr.dataset.id; renderSchoolsTable(); renderDetail(); }));
+}
+function renderDetail() {
+  const s = state.schools.find(x => x.id === state.selected);
+  if (!s) { $("detailBody").innerHTML = `<div class="empty"><span class="ico">${SVG.smoke}</span>No school selected — pick one in the table.</div>`; return; }
+  const d = decisionFor(s.id);
+  const hist = state.inputs && state.inputs.historyAqi ? (state.inputs.historyAqi[s.id] || []) : [];
+  const ev = d ? (d.evidence || {}) : {};
+  const plume = ev.plume || {};
+  const trendE = ev.trend || {};
+  const reasons = d ? (d.reasons || []) : [];
+  const hasFull = state.full[s.id] != null;
+
+  if (!d) {
+    $("detailBody").innerHTML = `<div class="empty"><span class="ico">${SVG.shield}</span>No decision recorded for this school yet. Run the morning (officer) or ask the agent.</div>`;
+    return;
+  }
+
+  const applied = reasons.filter(r => r.applied);
+  const kvs = [
+    {k:"Station AQI", v: ev.stationAqi != null ? ev.stationAqi : "—"},
+    {k:"GRAP stage", v: d.grapStage != null ? "Stage " + d.grapStage : "—"},
+    {k:"Plume score", v: d.plumeScore != null ? d.plumeScore.toFixed(2) : "—"},
+    {k:"Upwind fires", v: d.firesUpwind != null ? d.firesUpwind : "—"},
+    {k:"Baseline", v: trendE.baseline != null ? Math.round(trendE.baseline) : "—"},
+    {k:"Δ vs baseline", v: trendE.delta != null ? (trendE.delta > 0 ? "+" : "") + Math.round(trendE.delta) : "—"},
+  ];
+  const reasonLis = reasons.length ? reasons.map(r =>
+    `<li class="${r.applied ? "" : "off"}"><span class="rid">${esc(r.ruleId)}</span><div><b>${esc(r.title)}</b><br>${esc(r.detail)}</div></li>`).join("")
+    : `<li><span class="rid">n/a</span><div>No rule fired — the school opens normally.</div></li>`;
+
+  $("detailBody").innerHTML = `
+    <div class="hero-band">
+      ${heroRingSvg(d.aqiEffective, d.bandHex)}
+      <div>
+        <h3>${esc(s.name)}</h3>
+        <div class="loc">${esc(s.ward)} · ${esc(s.opensAt)} · ${s.strength} students ${s.hasSensitiveGroup ? "· <span style='color:var(--violet)'>sensitive group</span>" : ""}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${chip(d.level)} <span class="chipline" style="padding:3px 9px">AQI ${Math.round(d.aqiEffective)} · ${esc(d.bandLabel)}</span> ${trendChip(d.trend)}</div>
+      </div>
+    </div>
+    <div class="kv-grid">${kvs.map(k => `<div class="kv"><div class="k">${k.k}</div><div class="v">${k.v}</div></div>`).join("")}</div>
+    <div style="margin-top:14px">
+      <p style="font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0 0 6px">Why this verdict</p>
+      <ul class="reasons">${reasonLis}</ul>
+    </div>
+    <div style="margin-top:14px">
+      <p style="font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0 0 6px">Actions for the day</p>
+      ${d.actions.length ? `<div class="actions">${d.actions.map(a => `<span>${esc(a)}</span>`).join("")}</div>` : `<div class="actions"><span>Open normally</span></div>`}
+    </div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <p style="font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0">7-morning history</p>
+      ${sparkline(hist, d.aqiEffective, d.bandHex)}
+      <span class="consent-card" style="margin-top:0;margin-left:auto;padding:7px 10px">${hasFull ? "<b>Full evidence</b> loaded from this session." : "Summary from the saved decision."}</span>
+    </div>
+    <div class="sec-head" style="margin:16px 0 0">
+      <button class="btn soft sm" id="askAbout">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        Ask the 6 AM agent about this school</button>
+    </div>`;
+  const ask = $("askAbout");
+  if (ask) ask.onclick = () => { $("agSchool").value = s.id; setView("agent"); $("agMsg").focus(); };
+}
+function renderSchoolsView() { renderSchoolsTable(); renderDetail(); }
+
+/* ---------- agent ---------- */
+const QUICK = [
+  ["How's school today?", "status"],
+  ["Why?", "why"],
+  ["What changed overnight?", "change"],
+  ["What should we do?", "actions"],
+  ["Send the alert", "send"],
+  ["Yes, send it", "send-confirm"],
+];
+function seedAgentUI() {
+  if (!$("agSchool").options.length) {
+    $("agSchool").innerHTML = state.schools.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");
+    if (state.selected) $("agSchool").value = state.selected;
+  }
+}
+function renderAgent() {
+  seedAgentUI();
+  const sid = $("agSchool").value;
+  if (state.trLoaded !== sid) loadTranscript(sid);
+  renderLastSent();
+  renderConsentBox();
+}
+function renderLastSent() {
+  if (state.role !== "parent" && state.outbox.length) {
+    $("lastSent").innerHTML = state.outbox.slice(0, 3).map(outboxCard).join("\n");
+    return;
+  }
+  $("lastSent").innerHTML = `<div class="empty"><span class="ico">${SVG.shield}</span>${
+    state.role === "parent"
+      ? "Only principals and officers can dispatch alerts — this view is the delivery outbox."
+      : "No alert has been delivered yet. Say “<b>send the alert</b>” then “<b>yes, send it</b>” (principal or officer)."
+  }</div>`;
+}
+async function loadTranscript(schoolId) {
+  try {
+    const r = await api("GET", "/api/transcript?school_id=" + encodeURIComponent(schoolId));
+    $("chatlog").innerHTML = "";
+    (r.turns || []).forEach(t =>
+      addBubble(t.speaker === "user" ? "user" : "ai", t.text,
+        t.speaker === "agent" ? `intent <b>${esc(t.intent)}</b> · turn ${t.turn}` : ""));
+    state.trLoaded = schoolId;
+  } catch (e) { /* keep whatever is showing; hydration must never blank the chat */ }
+}
+function renderConsentBox() {
+  const c = state.lastConsent;
+  let tag, body;
+  if (c && c.maySend && c.authorized === false) {
+    tag = '<span class="consent-tag no-send">ROLE CANNOT SEND</span>';
+    body = `<b>Consent satisfied — role denied.</b> The gate is armed and confirmed, but only a <b>principal</b> or <b>officer</b> can dispatch. Nothing was sent.`;
+  } else if (!c) {
+    tag = '<span class="consent-tag no-send">IDLE — nothing to send</span>';
+    body = `<b>No send intent yet.</b> Try “send the alert” to arm the gate, then confirm with “yes, send it”.`;
+  } else if (c.maySend) {
+    tag = '<span class="consent-tag sent-ok">CERTIFIED SEND ✓</span>';
+    body = `<b>Send authorized this turn.</b> The signed certificate was recorded in the ledger and the delivery receipt in the outbox.`;
+  } else if (c.asked && !c.confirmed) {
+    tag = '<span class="consent-tag awaiting">AWAITING CONFIRMATION</span>';
+    body = `<b>Send intent armed.</b> Confirm in the same turn with “yes, send it” — a question never sends.`;
+  } else if (c.pendingSend) {
+    tag = '<span class="consent-tag no-send">SEND ARMED</span>';
+    body = `<b>Send intent armed.</b> Give an explicit confirmation like “yes, send it” to release it.`;
+  } else {
+    tag = '<span class="consent-tag no-send">NO SEND</span>';
+    body = `<b>No send this turn.</b> The gate requires both the send intent and an explicit confirmation.`;
+  }
+  $("consentBox").innerHTML = `<div class="kv" style="margin-bottom:8px"><div class="k" style="margin-bottom:4px">last check</div>${tag}</div>
+    <div class="consent-card" style="margin-top:0">${body}</div>`;
+}
+function addBubble(who, text, metaHtml) {
+  const b = document.createElement("div");
+  b.className = "bub " + who;
+  b.innerHTML = esc(text) + (metaHtml ? `<span class="meta">${metaHtml}</span>` : "");
+  $("chatlog").appendChild(b);
+  $("chatlog").scrollTop = $("chatlog").scrollHeight;
+}
+async function talk() {
+  const text = $("agMsg").value.trim();
+  const schoolId = $("agSchool").value;
+  if (!text || !schoolId) { if (!text) $("agMsg").focus(); return; }
+  addBubble("user", text);
+  $("agMsg").value = "";
+  try {
+    const r = await api("POST", "/api/agent/talk", {text, school_id: schoolId});
+    state.lastIntent = r.intent; state.lastConsent = r.consent;
+    const parts = [];
+    parts.push(`intent <b>${esc(r.intent)}</b>`);
+    const c = r.consent || {};
+    if (c.maySend && c.authorized === false) parts.push(`<span class="no-send consent-tag">role cannot send</span>`);
+    else if (c.maySend) parts.push(`<span class="sent-ok consent-tag">CERTIFIED SEND ✓</span>`);
+    else if (c.asked && !c.confirmed) parts.push(`<span class="awaiting consent-tag">awaiting confirmation</span>`);
+    else if (c.pendingSend) parts.push(`<span class="no-send consent-tag">send armed</span>`);
+    else parts.push(`<span class="no-send consent-tag">no-send</span>`);
+    let meta = parts.join(" · ");
+    if (r.sent) {
+      const cert = (r.sent.cert || "").slice(0, 18);
+      meta += `<br>${esc(r.sent.schoolId)} → certificate <b>${esc(cert)}…</b>`;
+      if (r.sent.delivery) meta += ` · via ${esc(r.sent.delivery.channel)} → receipt <b>${esc(r.sent.delivery.receipt)}</b>`;
+    }
+    addBubble("ai", r.reply, meta);
+    if (r.decision) { state.full[r.decision.schoolId] = r.decision; state.decisions[r.decision.schoolId] = r.decision; }
+    if (state.role !== "parent") { await loadOutbox().catch(() => {}); }
+    if (state.role === "officer") await loadLedger();
+    renderAgent(); renderConsentBox(); renderDashboardLight();
+  } catch (e) {
+    addBubble("ai", "error: " + e.message, "system");
+  }
+}
+function renderDashboardLight() {
+  if (state.view === "dashboard") renderDashboard();
+  if (state.view === "schools") renderSchoolsView();
+}
+$("agSend").onclick = talk;
+$("agMsg").addEventListener("keydown", e => { if (e.key === "Enter") talk(); });
+$("agSchool").addEventListener("change", () => loadTranscript($("agSchool").value));
+$("quick").innerHTML = QUICK.map(([t]) => `<button>${t}</button>`).join("");
+$("quick").querySelectorAll("button").forEach((b, i) =>
+  b.addEventListener("click", () => { $("agMsg").value = QUICK[i][0]; talk(); }));
+
+/* ---------- ledger ---------- */
+async function loadLedger() {
+  const r = await api("GET", "/api/ledger");
+  state.ledger = r.entries || [];
+}
+function renderLedger() {
+  $("ledgerSub").textContent = state.ledger.length ? `${state.ledger.length} rows · latest first` : "—";
+  $("feed").innerHTML = state.ledger.length ? state.ledger.map(r => {
+    const pl = JSON.stringify(r.payload, null, 1);
+    return `<li><span class="seq">#${r.seq}</span>
+      <div class="body">
+        <div class="top"><span class="bdg ${r.kind}">${esc(r.kind)}</span><span class="ref">${esc(r.ref)}</span><span class="ts">${esc(r.ts)}</span></div>
+        <pre>${esc(pl)}</pre>
+      </div></li>`;
+  }).join("") : `<li style="color:var(--faint)">Ledger is empty — run the 6 AM morning.</li>`;
+}
+async function verifyLedger() {
+  const btn = $("ledgerVerify"); btn.disabled = true; btn.textContent = "Verifying…";
+  try {
+    const r = await api("GET", "/api/ledger/verify");
+    const b = $("verifyBanner");
+    b.style.display = ""; b.className = "banner " + (r.ok ? "ok" : "bad");
+    b.innerHTML = `<span class="check">${r.ok ? "✓" : "!"}</span>
+      <div class="grow"><b>${r.ok ? "Tamper chain verified" : "Tamper detected"}</b><br>
+      ${r.ok ? `All ${r.rows} rows hash-chained and intact.` : `Chain broke at row #${r.brokeAt} — something was edited out of band.`}</div>`;
+  } catch (e) {
+    const b = $("verifyBanner");
+    b.style.display = ""; b.className = "banner bad";
+    b.innerHTML = `<span class="check">!</span><div class="grow">verify failed — ${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; btn.innerHTML = "Verify tamper chain"; }
+}
+$("ledgerVerify").onclick = verifyLedger;
+$("ledgerRefresh").onclick = async () => { await loadLedger(); renderLedger(); };
+
+/* ---------- outbox ---------- */
+async function loadOutbox() {
+  const r = await api("GET", "/api/outbox");
+  state.outbox = r.messages || [];
+}
+function outboxCard(m) {
+  const l = levelInfo(m.level);
+  const when = String(m.issuedUtc || "").replace("T", " ").slice(0, 16);
+  return `<div class="consent-card" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="chip ${l.cls}"><span class="dot"></span>${l.name}</span>
+      <b>${esc(m.schoolId)}</b>
+      <span style="margin-left:auto;color:var(--faint);font-size:11px">${esc(when)} UTC</span>
+    </div>
+    <div style="margin-top:6px;font-size:12.5px">${esc(m.message)}</div>
+    <div style="color:var(--faint);font-size:11.5px;margin-top:6px">via <b>${esc(m.channel || "—")}</b> → receipt <b>${esc(m.receipt || "—")}</b> · by ${esc(m.issuedBy || "—")}</div>
+    <pre style="margin:6px 0 0;font-size:10.5px">${esc((m.cert || "").slice(0, 120))}${(m.cert || "").length > 120 ? "…" : ""}</pre>
+  </div>`;
+}
+function renderOutbox() {
+  const rows = state.outbox || [];
+  $("outboxList").innerHTML = rows.length
+    ? rows.map(outboxCard).join("\n")
+    : `<div class="empty"><span class="ico">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </span>Nothing has been delivered yet — run the morning or send as principal/officer. Every send records its channel + receipt here.</div>`;
+}
+$("outboxRefresh").onclick = async () => { try { await loadOutbox(); renderOutbox(); } catch (e) { alert("outbox: " + e.message); } };
+
+/* ---------- refresh live fire data (officer) ---------- */
+$("refreshFires").onclick = async () => {
+  const btn = $("refreshFires"); btn.disabled = true; btn.textContent = "Fetching FIRMS…";
+  try {
+    const status = await api("POST", "/api/sources/refresh");
+    state.inputs = await api("GET", "/api/morning/inputs");
+    renderChips(); renderDashboard();
+    const live = status.source === "firms-live";
+    alert(status.fallback
+      ? "Live refresh failed (" + (status.error || "unknown") + ") — staying on the frozen scenario."
+      : "Live refresh OK: " + status.count + " fires from NASA FIRMS (bbox Punjab-Haryana/Delhi).");
+  } catch (e) {
+    alert("refresh fire data: " + e.message);
+  } finally { btn.disabled = false; btn.textContent = "Refresh fire data"; }
+};
+
+/* ---------- header chips ---------- */
+function renderChips() {
+  const ins = state.inputs, h = state.health;
+  $("chipDateTxt").textContent = ins ? ins.date : "—";
+  $("chipWindTxt").textContent = ins ? `${Math.round(ins.wind.directionDeg)}° ${ins.wind.speedKmh} km/h · ${compass(ins.wind.directionDeg)}` : "—";
+  const src = (ins && ins.source) || {};
+  const live = src.source === "firms-live";
+  $("chipSourceTxt").textContent = live ? "LIVE · FIRMS" : "FROZEN";
+  $("chipSourceDot").style.background = live ? "var(--good)" : "var(--amber)";
+  $("chipSource").style.display = ins ? "" : "none";
+  $("chipRulesetTxt").textContent = h.ruleset || "—";
+  $("sidever").textContent = h.version || "0.2.0";
+  $("rolePill").textContent = state.role;
+  $("sessionSub").textContent = state.sub;
+  $("sessionRole").textContent = state.role;
+  $("av").textContent = (state.sub || "U").slice(0, 2).toUpperCase();
+  $("nav-outbox").classList.toggle("hidden", state.role === "parent");
+  $("nav-ledger").classList.toggle("hidden", state.role !== "officer");
+  $("opslabel").classList.toggle("hidden", state.role === "parent");
+  $("runMorning").classList.toggle("hidden", state.role !== "officer");
+  $("refreshFires").classList.toggle("hidden", state.role !== "officer");
+}
+
+/* ---------- run morning ---------- */
+$("runMorning").onclick = async () => {
+  const btn = $("runMorning"); btn.disabled = true; btn.textContent = "Running…";
+  try {
+    const r = await api("POST", "/api/morning/run");
+    (r.decisions || []).forEach(d => state.full[d.schoolId] = d);
+    (r.decisions || []).forEach(d => state.decisions[d.schoolId] = d);
+    if (state.role === "officer") await loadLedger();
+    renderDashboard();
+    if (state.view === "schools") renderSchoolsView();
+    btn.textContent = `Run 6 AM morning · ${r.decisions.length} decided · ${r.alerts.length} alerted`;
+    setTimeout(() => { btn.textContent = "Run 6 AM morning"; btn.disabled = false; }, 2600);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "Run 6 AM morning";
+    alert("run morning: " + e.message + (state.role !== "officer" ? " (needs officer role)" : ""));
+  }
+};
+
+/* ---------- data loads ---------- */
+async function loadDecisions() {
+  await Promise.all(state.schools.map(async s => {
+    try {
+      const r = await api("GET", `/api/decisions/${s.id}`);
+      const rows = r.decisions || [];
+      if (rows.length) state.decisions[s.id] = rows[0];
+    } catch (e) { /* not fatal */ }
+  }));
+}
+
+async function enter() {
+  const r = await api("POST", "/api/auth/login", {username: $("username").value.trim(), password: $("password").value});
+  state.token = r.token; state.role = r.role; state.sub = r.displayName || r.sub;
+  state.inputs = await api("GET", "/api/morning/inputs");
+  state.health = await api("GET", "/api/health").catch(() => ({}));
+  const s = await api("GET", "/api/schools");
+  state.schools = s.schools || [];
+  await loadDecisions();
+  if (state.role === "officer") { await loadLedger(); await loadOutbox(); }
+  else if (state.role === "principal") { await loadOutbox(); }
+  $("login").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  renderChips();
+  setView("dashboard");
+}
+
+/* ---------- login ---------- */
+const roleButtons = () => document.querySelectorAll(".role-opt");
+roleButtons().forEach(opt => opt.addEventListener("click", () => {
+  roleButtons().forEach(o => o.classList.remove("sel"));
+  opt.classList.add("sel");
+  $("username").value = opt.dataset.user || "";
+  $("password").value = opt.dataset.pass || "";
+  $("username").focus();
+}));
+$("continuebtn").onclick = async () => {
+  $("continuebtn").disabled = true; $("continuebtn").textContent = "Signing in…";
+  try { await enter(); }
+  catch (e) {
+    $("continuebtn").disabled = false; $("continuebtn").textContent = "Sign in";
+    alert("sign-in failed: " + e.message);
+  }
+};
+$("username").addEventListener("keydown", e => { if (e.key === "Enter") $("password").focus(); });
+$("password").addEventListener("keydown", e => { if (e.key === "Enter") $("continuebtn").click(); });
+
+(async () => {
+  try {
+    const h = await api("GET", "/api/health");
+    state.health = h;
+    const src = h.source || {};
+    $("loginhealth").innerHTML = `${h.app} ${h.version} · ${h.ruleset} · fires: ${src.source === "firms-live" ? "LIVE (FIRMS)" : "FROZEN scenario"}`;
+    $("chipRulesetTxt").textContent = h.ruleset || "—";
+    $("sidever").textContent = h.version || "0.2.0";
+  } catch (e) { $("loginhealth").textContent = "unreachable — is the server running?"; }
+})();
 </script>
 </body>
 </html>

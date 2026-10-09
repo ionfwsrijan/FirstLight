@@ -20,13 +20,21 @@ the same consent-gated agent — running on AWS as **Build It, cloud-shaped**.
 
 ## Layout
 
-- `template.yaml` — API + 5 Lambdas + Cognito + DynamoDB + Core layer.
+- `template.yaml` — API + 6 Lambdas + Cognito + DynamoDB + Core layer.
 - `handlers/morning.py` — decide all schools / status for one school.
 - `handlers/talk.py` — consent-gated 6 AM agent (same consent rules as local).
 - `handlers/login.py` — public Cognito login for the console (id token → role).
-- `handlers/shared.py` — DynamoDB mirror of the SQLite repositories.
+- `handlers/meta.py` — the console's read surface: `/health`, `/inputs`,
+  `/schools`, `/decisions/{schoolId}`, `/transcript`, `/ledger`,
+  `/ledger/verify`, `/outbox`, and `POST /sources/refresh`.
+- `handlers/shared.py` — DynamoDB mirror of the SQLite repositories, including a
+  real SHA-256 hash-chain ledger (`/ledger/verify` recomputes the chain) and the
+  persisted agent transcript.
 - `static/index.py` + `static/index.html` — the browser console served by the
-  API at `GET /` (EnviroPulse-styled, same look as `web/index.html`).
+  API at `GET /`. **`web/index.html` is the single source of truth**: the page is
+  byte-identical to the local build and only the API base URL and the demo
+  credentials are injected at serve time. `build-layer.ps1` refreshes
+  `static/index.html` from `web/index.html`, so the two can never drift.
 - `build-layer.ps1` — packages the `firstlight` Python package into a Lambda
   layer so the cloud verdict is byte-identical to the local verdict.
 
@@ -69,12 +77,20 @@ Deployed and verified end to end in the Srijan AWS account, region `ap-south-2`:
   can send + run the morning).
 - **UserPoolId**: `ap-south-2_P3svZgHis` · **UserPoolClientId**:
   `1kvqda903s34vjavra0d71gnvo`.
-- Verified live: `GET /` → console HTML renders (login form + API base injected
-  from the request), `POST /login` → cognito IdToken + role for all three demo
-  accounts (wrong password → 401), `/morning` → 7 decisions (5 CLOSED /
-  2 PROTECTED, byte-identical to the local build), `/status` → latest decision,
-  `/talk` consent flow (a question never sends; explicit "yes, send it" sends
-  with a delivery receipt), unknown school → 404, no token → 401.
+- Verified live: `GET /` → the full local console (identical markup to
+  `web/index.html`) with the API base and the Cognito demo credentials injected
+  from the request, and a successful same-origin `/health` call from the
+  browser; `POST /login` → cognito IdToken + role for all three demo
+  accounts (wrong password → 401); `/morning` → 7 decisions + 7 alerts
+  (5 CLOSED / 2 PROTECTED, byte-identical to the local build), officer-only
+  (parent → 403); `/status` and `/decisions/{id}` → latest decision; `/talk`
+  consent flow (a question never sends; explicit "yes, send it" sends with a
+  delivery receipt; a parent confirming send is refused with `sent:null`,
+  `consent.authorized:false`); `/ledger` → 16 hash-chained rows (decision /
+  alert / morning_run) and `/ledger/verify` → `ok:true` over those rows;
+  `/outbox` → 8 alerts for the principal and officer (parent → 403);
+  `/transcript` → the persisted 2-turn agent conversation; `/sources/refresh` →
+  honest `frozen` fallback; unknown school → 404, no token → 401.
 
 > The one AWS surface we avoided: Cognito's *Managed Login v1* hosted-UI page
 > (a brand-new pool + domain serves a generic "An error was encountered with the

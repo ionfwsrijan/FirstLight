@@ -134,6 +134,71 @@ Resources:
             Auth:
               Authorizer: FirstLightAuthorizer
 
+  # ---- Console data endpoints (mirror of the local /api/* surface) ----
+  MetaHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: meta.handler
+      Policies: [AmazonDynamoDBReadOnlyAccess]
+      Events:
+        Health:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+            Auth:
+              Authorizer: NONE
+        Inputs:
+          Type: Api
+          Properties:
+            Path: /inputs
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        Schools:
+          Type: Api
+          Properties:
+            Path: /schools
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        Decisions:
+          Type: Api
+          Properties:
+            Path: /decisions/{schoolId}
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        Transcript:
+          Type: Api
+          Properties:
+            Path: /transcript
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        Ledger:
+          Type: Api
+          Properties:
+            Path: /ledger
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        LedgerVerify:
+          Type: Api
+          Properties:
+            Path: /ledger/verify
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        Outbox:
+          Type: Api
+          Properties:
+            Path: /outbox
+            Method: GET
+            RestApiId: !Ref FirstLightApi
+        RefreshFires:
+          Type: Api
+          Properties:
+            Path: /sources/refresh
+            Method: POST
+            RestApiId: !Ref FirstLightApi
+
   # ---- The browser console (public static page, Cognito-backed login) ----
   UiHandler:
     Type: AWS::Serverless::Function

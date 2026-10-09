@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<!--__API_BASE__--><!-- the Ship It UiHandler injects window.__API__ + __CREDS__ here -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FirstLight — 6 AM, for the air a child breathes</title>
@@ -351,7 +352,7 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
       </button>
     </div>
-    <p class="login-hint"><b>Demo accounts</b> (click a card to fill): <b>parent@firstlight.demo</b> / parent123 · <b>principal@firstlight.demo</b> / principal123 · <b>officer@firstlight.demo</b> / officer123. Open role minting (<code>/api/auth/issue</code>) is closed — Ship It uses Cognito, see <b>sam/template.yaml</b>.</p>
+    <p class="login-hint" id="hintCreds"><b>Demo accounts</b> (click a card to fill): <b>parent@firstlight.demo</b> / parent123 · <b>principal@firstlight.demo</b> / principal123 · <b>officer@firstlight.demo</b> / officer123. Open role minting (<code>/api/auth/issue</code>) is closed — Ship It uses Cognito, see <b>sam/template.yaml</b>.</p>
   </div>
 </div>
 
@@ -598,6 +599,16 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
+const API = window.__API__ || "";
+
+if (window.__CREDS__) {
+  document.querySelectorAll(".role-opt").forEach(opt => {
+    const c = window.__CREDS__[opt.dataset.role];
+    if (c) { if (c.username) opt.dataset.user = c.username; if (c.password) opt.dataset.pass = c.password; }
+  });
+  const hint = $("hintCreds");
+  if (hint && window.__CREDS__.__hint) hint.innerHTML = window.__CREDS__.__hint;
+}
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const timeAgo = (iso) => {
@@ -647,7 +658,7 @@ async function api(method, path, body) {
   const opts = {method, headers: {}};
   if (state.token) opts.headers["Authorization"] = "Bearer " + state.token;
   if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
-  const r = await fetch(path, opts);
+  const r = await fetch(API + path.replace(/^\/api/, ""), opts);
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.detail || r.status + " " + r.statusText);
   return data;
@@ -769,6 +780,14 @@ function decisionFor(schoolId) {
   if (f) return f;
   const s = state.decisions[schoolId];
   if (!s) return null;
+  if (s.levelName !== undefined) {
+    return {
+      schoolId, date: s.date, level: s.level, levelName: s.levelName,
+      aqiEffective: s.aqiEffective, bandLabel: s.bandLabel, bandHex: s.bandHex || bandHex(s.bandLabel),
+      grapStage: s.grapStage, firesUpwind: s.firesUpwind, plumeScore: s.plumeScore,
+      trend: s.trend, reasons: s.reasons || [], actions: s.actions || [], evidence: s.evidence || {},
+    };
+  }
   return {
     schoolId, date: s.date, level: s.level, levelName: LEVEL[s.level] || String(s.level),
     aqiEffective: s.aqi_effective, bandLabel: s.band_label, bandHex: bandHex(s.band_label),
@@ -1232,7 +1251,7 @@ $("password").addEventListener("keydown", e => { if (e.key === "Enter") $("conti
 
 (async () => {
   try {
-    const h = await fetch("/api/health").then(r => r.json());
+    const h = await api("GET", "/api/health");
     state.health = h;
     const src = h.source || {};
     $("loginhealth").innerHTML = `${h.app} ${h.version} · ${h.ruleset} · fires: ${src.source === "firms-live" ? "LIVE (FIRMS)" : "FROZEN scenario"}`;
