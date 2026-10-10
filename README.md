@@ -9,7 +9,7 @@
 > deterministic engine — the core ships as a Lambda layer, and a test asserts the
 > cloud answer is byte-for-byte the local one.
 
-[![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
+[![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2eb872)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
 [![Tests](https://img.shields.io/badge/tests-132%20passed-2eb872)](tests/)
