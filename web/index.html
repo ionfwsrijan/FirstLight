@@ -237,7 +237,7 @@
 
   /* agent */
   .agent-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
-  .chat{display:flex;flex-direction:column;height:520px}
+  .chat{display:flex;flex-direction:column;height:min(62vh,520px)}
   .chatlog{flex:1;overflow-y:auto;padding:2px 2px 8px;display:flex;flex-direction:column;gap:12px}
   .bub{max-width:84%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
   .bub .meta{display:block;margin-top:6px;font-size:10.5px;color:var(--faint)}
@@ -257,6 +257,10 @@
   .quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
   .quick button{background:none;border:1px solid var(--border2);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--muted);font-weight:600}
   .quick button:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
+  .prompts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:2px 0 10px;border-bottom:1px solid var(--line)}
+  .prompts .pl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+  .prompts button{background:none;border:1px solid var(--border2);border-radius:999px;padding:4px 10px;font-size:11.5px;color:var(--muted);font-weight:600;cursor:pointer}
+  .prompts button:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
   .consent-card{margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12.5px;color:var(--muted)}
   .consent-card b{color:var(--text)}
 
@@ -634,13 +638,15 @@
         </div>
         <div class="agent-grid">
           <div class="card chat">
-            <div class="chatlog" id="chatlog" role="log" aria-live="polite" aria-label="Conversation with the 6 AM agent"><div id="startBlock"></div></div>
+            <div class="chatlog" id="chatlog" role="log" aria-live="polite" aria-label="Conversation with the 6 AM agent">
+              <div class="prompts" id="prompts"></div>
+              <div id="startBlock"></div>
+            </div>
             <div class="composer">
               <select id="agSchool"></select>
               <input id="agMsg" placeholder="e.g. is today safe for school?">
               <button class="btn" id="agSend">Ask</button>
             </div>
-            <div class="quick" id="quick"></div>
           </div>
           <div class="stack">
             <div class="card">
@@ -668,7 +674,7 @@
       <section class="view" id="view-outbox">
         <div class="sec-head">
           <h2>Delivery outbox</h2>
-          <span class="hint">Every alert actually sent, with its channel receipt. Nothing is only printed to a log.</span>
+          <span class="hint">Every approved alert is recorded here with its channel and receipt. In this demo, delivery is simulated — nothing reaches a real device.</span>
           <div class="grow"></div>
           <button class="btn ghost sm" id="outboxRefresh">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
@@ -677,7 +683,7 @@
         <div id="outboxList">
           <div class="empty"><span class="ico">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          </span><span>Nothing delivered yet — run the morning or send as principal/officer. Alerts show their channel + receipt.</span></div>
+          </span><span>No simulated deliveries yet — run the morning or send as principal/officer. Approved alerts are recorded with channel + receipt.</span></div>
         </div>
       </section>
 
@@ -939,7 +945,7 @@ function scenarioMap(inputs) {
 const NAV = {"dashboard":["Dashboard","Deterministic verdicts for every school, decided at 6 AM."],
              "schools":["Schools","Inspect each school's verdict, evidence and actions."],
              "agent":["6 AM agent","Ask questions; the agent narrates the decision, never invents."],
-             "outbox":["Delivery outbox","Alerts that actually went out — channel and receipt for each."],
+             "outbox":["Delivery outbox","Alerts recorded on delivery — channel and receipt for each (simulated in this demo)."],
              "ledger":["Ledger","Append-only audit of decisions, alerts and runs."]};
 const RENDER = {dashboard: () => renderDashboard(), schools: () => renderSchoolsView(), agent: () => renderAgent(), outbox: () => renderOutbox(), ledger: () => renderLedger()};
 function setView(v) {
@@ -1181,16 +1187,12 @@ function renderChatStart() {
   const sb = $("startBlock"); if (!sb) return;
   const empty = !$("chatlog").querySelector(".bub");
   sb.style.display = empty ? "" : "none";
-  $("quick").style.display = empty ? "none" : "";
   if (!empty || sb.dataset.done) return;
   sb.dataset.done = "1";
   sb.innerHTML = `<div class="bub ai" style="max-width:100%">
       <b>Good morning. I'm the 6 AM decision agent.</b> I read the scenario and explain it like the officer's desk — what's
       decided, why, and which schools are affected. I never guess, and I never send unless you say <b>send it</b> and
-      confirm in the same turn.<span class="meta">pick a school above, then try one of these prompts:</span></div>
-    <div class="quick" style="margin-top:4px">${QUICK.map(([t]) => `<button>${t}</button>`).join("")}</div>`;
-  sb.querySelectorAll("button").forEach((b, i) =>
-    b.addEventListener("click", () => { $("agMsg").value = QUICK[i][0]; talk(); }));
+      confirm in the same turn.<span class="meta">pick a school in the corner, then tap a prompt above or type your own.</span></div>`;
 }
 function renderAgent() {
   seedAgentUI();
@@ -1208,7 +1210,7 @@ function renderLastSent() {
   $("lastSent").innerHTML = `<div class="empty"><span class="ico">${SVG.shield}</span>${
     state.role === "parent"
       ? "Only principals and officers can dispatch alerts — this view is the delivery outbox."
-      : "No alert has been delivered yet. Say “<b>send the alert</b>” then “<b>yes, send it</b>” (principal or officer)."
+      : "No simulated delivery recorded yet. Say “<b>send the alert</b>” then “<b>yes, send it</b>” (principal or officer)."
   }</div>`;
 }
 async function loadTranscript(schoolId) {
@@ -1233,7 +1235,7 @@ function renderConsentBox() {
     body = `<b>No send intent yet.</b> Try “send the alert” to arm the gate, then confirm with “yes, send it”.`;
   } else if (c.maySend) {
     tag = '<span class="consent-tag sent-ok">CERTIFIED SEND ✓</span>';
-    body = `<b>Send authorized this turn.</b> The signed certificate was recorded in the ledger and the delivery receipt in the outbox.`;
+    body = `<b>Send authorized this turn.</b> The signed certificate was recorded in the ledger and the delivery receipt in the outbox (simulated).`;
   } else if (c.asked && !c.confirmed) {
     tag = '<span class="consent-tag awaiting">AWAITING CONFIRMATION</span>';
     body = `<b>Send intent armed.</b> Confirm in the same turn with “yes, send it” — a question never sends.`;
@@ -1293,8 +1295,8 @@ function renderDashboardLight() {
 $("agSend").onclick = talk;
 $("agMsg").addEventListener("keydown", e => { if (e.key === "Enter") talk(); });
 $("agSchool").addEventListener("change", () => loadTranscript($("agSchool").value));
-$("quick").innerHTML = QUICK.map(([t]) => `<button>${t}</button>`).join("");
-$("quick").querySelectorAll("button").forEach((b, i) =>
+$("prompts").innerHTML = `<span class="pl">try:</span>` + QUICK.map(([t]) => `<button>${t}</button>`).join("");
+$("prompts").querySelectorAll("button").forEach((b, i) =>
   b.addEventListener("click", () => { $("agMsg").value = QUICK[i][0]; talk(); }));
 renderChatStart();
 
@@ -1368,7 +1370,7 @@ function outboxCard(m) {
     </div>
     <div style="margin-top:6px;font-size:12.5px">${esc(m.message)}</div>
     <div style="color:var(--faint);font-size:11.5px;margin-top:6px">via <b>${esc(channel)}</b> → receipt <b>${esc(receipt)}</b> · by ${esc(m.issuedBy || "—")}</div>
-    ${cert ? `<details class="det" open><summary>certificate <span class="det-len">${cert.length} bytes</span></summary><pre>${esc(cert)}</pre></details>`
+    ${cert ? `<details class="det"><summary>certificate <span class="det-len">${cert.length} bytes</span></summary><pre>${esc(cert)}</pre></details>`
       : `<div style="margin-top:6px;color:var(--faint);font-size:11px">no certificate recorded</div>`}
   </div>`;
 }
@@ -1378,7 +1380,7 @@ function renderOutbox() {
     ? rows.map(outboxCard).join("\n")
     : `<div class="empty"><span class="ico">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-      </span>Nothing has been delivered yet — run the morning or send as principal/officer. Every send records its channel + receipt here.</div>`;
+      </span>No simulated deliveries yet — run the morning or send as principal/officer. Every approved send is recorded with channel + receipt here.</div>`;
 }
 $("outboxRefresh").onclick = async () => { try { await loadOutbox(); renderOutbox(); } catch (e) { alert("outbox: " + e.message); } };
 
