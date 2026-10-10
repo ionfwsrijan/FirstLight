@@ -22,3 +22,6 @@ sam/build-layer/
 .coverage
 coverage.xml
 htmlcov/
+
+# Demo-reel video kit (kept local only)
+video/
