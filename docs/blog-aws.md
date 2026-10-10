@@ -1,5 +1,9 @@
 # FirstLight: the 6 AM agent that decides seven schools' mornings — and ships the receipts
 
+![FirstLight — the 6 AM on-call agent for the air a child breathes](assets/banner-cover.png)
+
+*The 6 AM on-call agent for the air a child breathes — it gives every school its answer before a single bell rings, and it ships the receipts.*
+
 It is 6 AM in Delhi in early November. The air at Anand Vihar reads **427** on the CPCB scale and there are six stubble fires upwind in Punjab. No human has looked at any of it yet. FirstLight has already interpolated every school's air from the nearest monitoring stations, scored the smoke plume against the wind, read the seven-day trend, and run it all through the published rules — **CPCB bands and the CAQM GRAP stages** — for all seven schools at once. One school comes out **CLOSED**. Another, calmer, comes out **PROTECTED**. Each verdict arrives with its evidence and the exact list of actions the rules allow.
 
 That's the product. The interesting engineering question is the one every team deploying an "AI agent" eventually has to answer: **when the decision affects a child's school day, who is actually making the call — and can you prove it?**
@@ -144,4 +148,4 @@ The hardest part of an agent that touches the real world isn't the model — it'
 
 ---
 
-*Suggested tags:* `aws` · `serverless` · `aws-lambda` · `serverlessλ` · `python` · `airquality` · `architecture`
+**Tags:** `#aws` `#serverless` `#awslambda` `#python` `#architecture` `#airquality`
