@@ -460,7 +460,8 @@
   .prompts button{font-size:12px;color:#555d51}
   @media(max-width:620px){.prompts{flex-wrap:wrap;overflow:visible}.prompts .pl,.prompts button{flex:0 0 auto;white-space:nowrap}}
   .bub .meta{font-size:11px}
-  .replay-chip,.status-fresh,.status-stale,.status-fallback,.status-frozen{font-variant-numeric:tabular-nums}
+  .replay-chip,.status-fresh,.status-stale,.status-fallback,.status-frozen,.status-mixed,.status-unknown{font-variant-numeric:tabular-nums}
+  @media(max-width:1100px){#chipWind,#chipRuleset{display:none}}
   @media(max-width:620px){
     .topbar{height:auto;min-height:68px;padding:10px 14px;flex-wrap:wrap;gap:8px}
     .topbar>.menu-btn{order:0}
@@ -582,7 +583,7 @@
           <span class="dot" id="chipAsOfDot"></span>
           <span id="chipAsOfTxt">—</span>
         </span>
-        <span class="chipline hide-sm" id="chipSource" title="source provenance — frozen scenario vs live (Open-Meteo CPCB air + NASA FIRMS fires)"> 
+        <span class="chipline" id="chipSource" title="source provenance — frozen scenario vs live (Open-Meteo CPCB air + NASA FIRMS fires)"> 
           <span class="dot" id="chipSourceDot"></span>
           <span id="chipSourceTxt">—</span>
         </span>
@@ -794,6 +795,19 @@ const timeAgo = (iso) => {
   if (s < 3600) return Math.floor(s / 60) + "m ago";
   if (s < 86400) return Math.floor(s / 3600) + "h ago";
   return Math.floor(s / 86400) + "d ago";
+};
+const durAgo = (iso) => {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return "";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return s ? s + "s" : "now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "m";
+  const h = Math.floor(m / 60);
+  if (h < 24) return (m % 60 ? `${h}h ${m % 60}m` : `${h}h`);
+  const d = Math.floor(h / 24);
+  return h % 24 ? `${d}d ${h % 24}h` : `${d}d`;
 };
 const fmtIst = (iso) => {
   const t = new Date(iso).getTime();
@@ -1470,7 +1484,7 @@ $("refreshFires").onclick = async () => {
 function renderChips() {
   const ins = state.inputs, h = state.health;
   $("chipDateTxt").textContent = ins ? `REPLAY · ${ins.date}` : "—";
-  $("chipWindTxt").textContent = ins ? `${Math.round(ins.wind.directionDeg)}° ${ins.wind.speedKmh} km/h · ${compass(ins.wind.directionDeg)}` : "—";
+  $("chipWindTxt").textContent = ins ? `${Math.round(ins.wind.directionDeg)}° ${compass(ins.wind.directionDeg)}` : "—";
   const src = (ins && ins.source) || {};
   const sfields = (h && h.sources) || {};
   const fireLive = (sfields.fires && sfields.fires.live) || src.source === "firms-live";
@@ -1497,7 +1511,7 @@ function renderChips() {
     el.classList.remove("status-fresh", "status-stale", "status-fallback", "status-frozen", "status-unknown");
     el.classList.add(status);
     el.style.display = "";
-    $("chipAsOfTxt").textContent = anyFallback ? "FALLBACK ACTIVE" : !anyLive ? "FROZEN DATA" : !hasTimestamp ? "UPDATE TIME UNKNOWN" : stale ? `STALE · ${timeAgo(fetched)}` : `UPDATED ${timeAgo(fetched)}`;
+    $("chipAsOfTxt").textContent = anyFallback ? "FALLBACK ACTIVE" : !anyLive ? "FROZEN DATA" : !hasTimestamp ? "UPDATE TIME UNKNOWN" : stale ? `STALE · ${durAgo(fetched)}` : `FRESH · ${durAgo(fetched)}`;
     $("chipAsOfDot").style.background = anyFallback || stale ? "var(--red)" : anyLive && hasTimestamp ? "var(--good)" : "var(--amber)";
     el.title = anyFallback ? "Live refresh fell back to the frozen scenario snapshot." : !anyLive ? "The displayed inputs are from a frozen scenario snapshot." : hasTimestamp
       ? `Source timestamp: ${fmtIst(fetched)} · ${timeAgo(fetched)}.${stale ? " Older than the 90-minute freshness window." : " Within the 90-minute freshness window."} Full provenance in the banner below.`
