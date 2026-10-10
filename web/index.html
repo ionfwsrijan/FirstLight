@@ -417,6 +417,10 @@
   .reasons li,.consent-card{background:rgba(247,248,244,.73);border-color:rgba(39,45,34,.06);border-radius:12px;font-size:11px;color:#5f655b}
   .reasons li .rid{color:#657e1f;background:#efffc8}.actions span{background:rgba(246,248,242,.78);border-color:rgba(39,45,34,.07);border-radius:999px;font-size:10px}
   .agent-grid{gap:17px}.bub{font-size:12px;border-radius:16px}.bub.user{background:#a9e900;color:#273018;border-bottom-right-radius:5px}.bub.user .meta{color:#52652c}.bub.ai{background:rgba(247,248,244,.84);border-color:var(--line)}
+  .chat.is-empty{height:auto;min-height:0}
+  .chat.is-empty .chatlog{flex:0 0 auto;overflow:visible;padding:12px 2px 0}
+  .chat.is-empty #startBlock{flex:0 0 auto;padding:16px 4px 20px}
+  .chat.is-empty .empty-chat{height:auto;min-height:0}
   .composer{border-color:var(--line)}.composer select,.composer input,.field input{border-color:rgba(42,48,37,.17);border-radius:12px;background:rgba(255,255,255,.84);font-size:12px}.composer input:focus,.composer select:focus,.field input:focus{border-color:#a4d329;box-shadow:0 0 0 3px rgba(181,244,0,.19)}
   .quick button{border-color:rgba(42,48,37,.12);background:rgba(255,255,255,.4);border-radius:999px;font-size:10px}.quick button:hover{color:#52691a;border-color:#a6d736;background:#f3ffdc}
   .feed pre{background:rgba(245,247,241,.8);border-color:var(--line);border-radius:11px}.feed li{border-color:var(--line)}
@@ -430,7 +434,39 @@
   .field label{font-size:9px;letter-spacing:1px;color:#7e8479}.login-hint{font-size:10px;color:#767c71;line-height:1.65}
   @media(max-width:980px){.sidebar{background:rgba(248,249,245,.94);box-shadow:0 20px 70px rgba(28,33,25,.18)}.dashgrid,.agent-grid,.detail-grid{grid-template-columns:1fr}.dashgrid>.stack:first-child>.card{min-height:0}.table-wrap table th:nth-child(7),.table-wrap table td:nth-child(7),.table-wrap table th:nth-child(8),.table-wrap table td:nth-child(8),.table-wrap table th:nth-child(9),.table-wrap table td:nth-child(9){display:none}}
   @media(max-width:620px){.content{padding:18px 14px 34px}.topbar{height:68px;padding:0 14px}.topbar h1{font-size:16px}.chips{gap:5px}.chips .chipline.hide-sm{display:none}.brand{display:flex;padding:19px 20px 14px}.kpi-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi{min-height:98px;padding:13px}.kpi .v{font-size:26px}.kpi .s{font-size:9px}.sec-head{align-items:flex-start}.sec-head .hint{width:100%;order:3}.sec-head .grow{display:none}.card{padding:16px;border-radius:19px}.map-wrap{padding:4px}.map-legend{gap:9px}.hero-band{align-items:flex-start}.kv-grid{grid-template-columns:repeat(2,1fr)}.composer{flex-wrap:wrap}.composer select{max-width:none;width:100%}.composer input{min-width:calc(100% - 66px)}.table-wrap table th:nth-child(4),.table-wrap table td:nth-child(4),.table-wrap table th:nth-child(6),.table-wrap table td:nth-child(6){display:none}.prompts{flex-wrap:nowrap;overflow-x:auto}.prompts::-webkit-scrollbar{display:none}.consent-card,.feed .body .ref,.bub .meta{overflow-wrap:anywhere}}
-</style>
+  /* Clear provenance at a glance; text and status color both carry meaning. */
+  :root{--faint:#6f756b}
+  .topbar .sub,.sec-head .hint,.card .card-sub,.kpi .t,.kpi .s,.vlist .ws,.vlist .aqi small,.map-legend,.field label,.login-hint{color:#666d62}
+  .chips .chipline{font-size:11px;color:#555d51}
+  .chipline.replay-chip{background:rgba(255,245,214,.82);border-color:rgba(194,134,10,.25);color:#76580f}
+  .chipline.replay-chip .dot{background:#c2860a}
+  .chipline.status-fresh{background:rgba(232,248,232,.82);border-color:rgba(47,158,70,.25);color:#286b36}
+  .chipline.status-stale,.chipline.status-fallback{background:rgba(255,235,232,.86);border-color:rgba(205,58,53,.28);color:#9e302c}
+  .chipline.status-frozen{background:rgba(255,245,214,.82);border-color:rgba(194,134,10,.25);color:#76580f}
+  .chipline.status-unknown{background:rgba(255,245,214,.82);border-color:rgba(194,134,10,.25);color:#76580f}
+  .banner .tag{font-size:11px;letter-spacing:.04em}
+  .banner .tag.bad{background:var(--red)}
+  .banner .grow{line-height:1.65}
+  .banner .asof{font-size:11px;color:#555d51;white-space:normal}
+  .banner .asof b{color:#30372d}
+  .banner .asof .stale{font-size:10.5px}
+  .kpi .t{font-size:10px}
+  .kpi .s{font-size:11.5px;color:#62695e}
+  .chip{font-size:10px}
+  .vlist .aqi small,.field label{font-size:10px}
+  .prompts .pl{font-size:10.5px;color:#62695e}
+  .prompts button{font-size:12px;color:#555d51}
+  @media(max-width:620px){.prompts{flex-wrap:wrap;overflow:visible}.prompts .pl,.prompts button{flex:0 0 auto;white-space:nowrap}}
+  .bub .meta{font-size:11px}
+  .replay-chip,.status-fresh,.status-stale,.status-fallback,.status-frozen{font-variant-numeric:tabular-nums}
+  @media(max-width:620px){
+    .topbar{height:auto;min-height:68px;padding:10px 14px;flex-wrap:wrap;gap:8px}
+    .topbar>.menu-btn{order:0}
+    .topbar>.menu-btn+div{order:1;flex:1;min-width:120px}
+    .topbar>.chips{order:2;flex:1 0 100%;margin-left:0;justify-content:flex-start}
+    .chips .chipline{font-size:10.5px;padding:6px 9px}
+  }
+ </style>
 </head>
 <body>
 
@@ -532,8 +568,8 @@
         <div class="sub" id="pageSub">—</div>
       </div>
       <div class="chips">
-        <span class="chipline" id="chipDate" title="replayed scenario morning — a frozen demo decision day. The live inputs below are current, not from this date.">
-          <span class="dot" style="background:#7aa300"></span>
+        <span class="chipline replay-chip" id="chipDate" title="Frozen scenario decision date. Live readings have a separate update time.">
+          <span class="dot"></span>
           <span id="chipDateTxt">—</span>
         </span>
         <span class="chipline" id="chipAsOf" title="when the live inputs were last fetched (IST)">
@@ -1212,6 +1248,8 @@ function renderChatStart() {
   const sb = $("startBlock"); if (!sb) return;
   const empty = !$("chatlog").querySelector(".bub");
   sb.style.display = empty ? "flex" : "none";
+  const chat = $("chatlog").closest(".chat");
+  if (chat) chat.classList.toggle("is-empty", empty);
 }
 function renderAgent() {
   seedAgentUI();
@@ -1235,7 +1273,7 @@ function renderLastSent() {
 async function loadTranscript(schoolId) {
   try {
     const r = await api("GET", "/api/transcript?school_id=" + encodeURIComponent(schoolId));
-    $("chatlog").innerHTML = "";
+    $("chatlog").querySelectorAll(".bub").forEach(b => b.remove());
     (r.turns || []).forEach(t =>
       addBubble(t.speaker === "user" ? "user" : "ai", t.text,
         t.speaker === "agent" ? `intent <b>${esc(t.intent)}</b> · turn ${t.turn}` : ""));
@@ -1273,6 +1311,7 @@ function addBubble(who, text, metaHtml) {
   b.className = "bub " + who;
   b.innerHTML = esc(text) + (metaHtml ? `<span class="meta">${metaHtml}</span>` : "");
   $("chatlog").appendChild(b);
+  renderChatStart();
   $("chatlog").scrollTop = $("chatlog").scrollHeight;
 }
 async function talk() {
@@ -1280,6 +1319,7 @@ async function talk() {
   const schoolId = $("agSchool").value;
   if (!text || !schoolId) { if (!text) $("agMsg").focus(); return; }
   addBubble("user", text);
+  renderChatStart();
   $("agMsg").value = "";
   try {
     const r = await api("POST", "/api/agent/talk", {text, school_id: schoolId});
@@ -1423,7 +1463,7 @@ $("refreshFires").onclick = async () => {
 /* ---------- header chips ---------- */
 function renderChips() {
   const ins = state.inputs, h = state.health;
-  $("chipDateTxt").textContent = ins ? `replay · ${ins.date}` : "—";
+  $("chipDateTxt").textContent = ins ? `REPLAY · ${ins.date}` : "—";
   $("chipWindTxt").textContent = ins ? `${Math.round(ins.wind.directionDeg)}° ${ins.wind.speedKmh} km/h · ${compass(ins.wind.directionDeg)}` : "—";
   const src = (ins && ins.source) || {};
   const sfields = (h && h.sources) || {};
@@ -1431,22 +1471,27 @@ function renderChips() {
   const staLive = (sfields.stations && sfields.stations.live);
   const anyLive = fireLive || staLive;
   const anyFallback = Object.values(sfields).some(f => f && f.fallback);
-  $("chipSourceTxt").textContent = anyLive ? (anyFallback ? "LIVE · FALLBACK" : "LIVE") : "FROZEN";
-  $("chipSourceDot").style.background = anyLive ? (anyFallback ? "var(--amber)" : "var(--good)") : "var(--amber)";
-  $("chipSource").style.display = ins ? "" : "none";
+  $("chipSourceTxt").textContent = anyFallback ? "SNAPSHOT FALLBACK" : anyLive ? "LIVE INPUTS" : "FROZEN INPUTS";
+  $("chipSourceDot").style.background = anyFallback ? "var(--red)" : anyLive ? "var(--good)" : "var(--amber)";
+  const sourceChip = $("chipSource");
+  sourceChip.classList.remove("status-fresh", "status-stale", "status-fallback", "status-frozen");
+  sourceChip.classList.add(anyFallback ? "status-fallback" : anyLive ? "status-fresh" : "status-frozen");
+  sourceChip.style.display = ins ? "" : "none";
   const fetched = (src && src.fetchedAt) || (h && h.source && h.source.fetchedAt);
   const el = $("chipAsOf");
   if (el) {
-    if (fetched) {
-      const age = Date.now() - new Date(fetched).getTime();
-      const stale = age > STALE_MS;
-      el.style.display = "";
-      $("chipAsOfTxt").textContent = anyFallback ? "live · fell back" : stale ? `live · ${timeAgo(fetched)} old` : "live inputs";
-      $("chipAsOfDot").style.background = stale ? "var(--red)" : anyFallback ? "var(--amber)" : "var(--good)";
-      el.title = `Live inputs last fetched at ${fmtIst(fetched)} — ${timeAgo(fetched)} old.${stale ? " STALE — refresh may be needed." : ""} Full provenance in the banner below.`;
-    } else {
-      el.style.display = "none";
-    }
+    const age = fetched ? Date.now() - new Date(fetched).getTime() : NaN;
+    const hasTimestamp = Number.isFinite(age) && age >= 0;
+    const stale = anyLive && hasTimestamp && age > STALE_MS;
+    const status = anyFallback ? "status-fallback" : anyLive ? (hasTimestamp ? (stale ? "status-stale" : "status-fresh") : "status-unknown") : "status-frozen";
+    el.classList.remove("status-fresh", "status-stale", "status-fallback", "status-frozen", "status-unknown");
+    el.classList.add(status);
+    el.style.display = "";
+    $("chipAsOfTxt").textContent = anyFallback ? "FALLBACK ACTIVE" : !anyLive ? "FROZEN DATA" : !hasTimestamp ? "UPDATE TIME UNKNOWN" : stale ? `STALE · ${timeAgo(fetched)}` : `UPDATED ${timeAgo(fetched)}`;
+    $("chipAsOfDot").style.background = anyFallback || stale ? "var(--red)" : anyLive && hasTimestamp ? "var(--good)" : "var(--amber)";
+    el.title = anyFallback ? "Live refresh fell back to the frozen scenario snapshot." : !anyLive ? "The displayed inputs are from a frozen scenario snapshot." : hasTimestamp
+      ? `Source timestamp: ${fmtIst(fetched)} · ${timeAgo(fetched)}.${stale ? " Older than the 90-minute freshness window." : " Within the 90-minute freshness window."} Full provenance in the banner below.`
+      : "Live source is reported, but its update timestamp is unavailable.";
   }
   $("chipRulesetTxt").textContent = h.ruleset || "—";
   $("sidever").textContent = h.version || "0.2.0";
@@ -1471,14 +1516,26 @@ function renderProvenance() {
   const anyLive = order.some(k => (s[k] || {}).live);
   const anyFallback = order.some(k => (s[k] || {}).fallback);
   const fetched = (state.health && state.health.source && state.health.source.fetchedAt) || null;
-  const stale = !!fetched && (Date.now() - new Date(fetched).getTime()) > STALE_MS;
-  const mode = anyLive ? "LIVE DATA" : "DEMO · FROZEN SNAPSHOT";
-  const modeCls = anyLive ? "ok" : "warn";
+  const age = fetched ? Date.now() - new Date(fetched).getTime() : NaN;
+  const hasTimestamp = Number.isFinite(age) && age >= 0;
+  const stale = anyLive && hasTimestamp && age > STALE_MS;
+  const labels = {stations: "air readings", fires: "fire detections", wind: "wind", history: "historical data"};
+  const liveFields = order.filter(k => (s[k] || {}).live).map(k => labels[k] || k);
+  const frozenFields = order.filter(k => !(s[k] || {}).live).map(k => labels[k] || k);
+  const mode = anyFallback ? "SNAPSHOT FALLBACK" : anyLive ? (stale ? "LIVE · STALE" : hasTimestamp ? "LIVE INPUTS" : "LIVE · TIME UNKNOWN") : "FROZEN SCENARIO";
+  const modeCls = anyFallback || stale ? "bad" : anyLive && hasTimestamp ? "ok" : "warn";
+  const scenarioDate = state.inputs && state.inputs.date;
+  const updateText = anyFallback
+    ? "Live refresh unavailable; the frozen snapshot is in use."
+    : !anyLive
+      ? "No live inputs; the scenario snapshot is frozen."
+    : hasTimestamp
+      ? `${stale ? "STALE · last updated" : "Last updated"} ${timeAgo(fetched)} · ${fmtIst(fetched)}${stale ? " · outside the 90-minute freshness window" : ""}.`
+      : "Live source reported; update timestamp unavailable.";
   el.className = `banner ${anyFallback ? "bad" : modeCls}`;
   el.style.display = "";
   el.innerHTML = `<span class="tag ${modeCls}">${mode}</span>
-    <div class="grow"><b>Live:</b> stations &amp; fires · <b>Frozen:</b> wind &amp; history · <b>Decision:</b> replayed scenario morning.${anyFallback ? " A live refresh fell back to the snapshot." : ""}
-    ${fetched ? `<span class="asof">${stale ? `<span class="stale">STALE · ${timeAgo(fetched)} old</span>` : ""}live as of <b>${fmtIst(fetched)}</b> (${timeAgo(fetched)})</span>` : ""}</div>`;
+    <div class="grow"><b>Inputs:</b> Live — ${liveFields.length ? esc(liveFields.join(", ")) : "none"} · Frozen — ${frozenFields.length ? esc(frozenFields.join(", ")) : "none"}. <b>Decision:</b> replayed${scenarioDate ? ` · ${esc(scenarioDate)}` : " scenario morning"}. <span class="asof">${esc(updateText)}</span></div>`;
 }
 
 /* ---------- run morning ---------- */
