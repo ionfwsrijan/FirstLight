@@ -177,6 +177,8 @@
   .act .bdg.morning_run{background:var(--violet-soft);color:var(--violet)}
   .act .tx{min-width:0;flex:1}
   .act .tx .ref{font-weight:600;color:var(--text)}
+  .act .tx .sum{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .act .tx .sum b{color:var(--text)}
   .act .tx .pl{color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .act .ts{color:var(--faint);font-size:11px;white-space:nowrap;flex:0 0 auto;margin-left:auto}
 
@@ -199,6 +201,9 @@
   .banner .tag{flex:0 0 auto;font-size:11px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border-radius:999px;color:#fff;background:#6b7280}
   .banner .tag.ok{background:var(--good)}
   .banner .tag.warn{background:#b7791f}
+  .banner .asof{color:var(--faint);font-size:11.5px}
+  .banner .asof b{color:var(--muted)}
+  .banner .asof .stale{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--red-soft);color:var(--red);font-weight:800;font-size:10px;letter-spacing:.4px;margin-right:7px;vertical-align:1px}
 
   /* table */
   .table-wrap{overflow-x:auto}
@@ -238,6 +243,8 @@
   /* agent */
   .agent-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
   .chat{display:flex;flex-direction:column;height:min(54vh,470px)}
+  .chat.empty{height:auto}
+  .chat.empty .chatlog{flex:none;overflow:visible}
   .chatlog{flex:1;overflow-y:auto;padding:2px 2px 8px;display:flex;flex-direction:column;gap:12px}
   .bub{max-width:84%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
   .bub .meta{display:block;margin-top:6px;font-size:10.5px;color:var(--faint)}
@@ -1072,13 +1079,26 @@ function selectSchool(id) {
     setTimeout(() => row.classList.remove("flash"), 1700);
   }
 }
+function activitySummary(r) {
+  const p = r.payload || {};
+  const bits = [];
+  const ev = p.intent || p.action || p.event;
+  if (ev) bits.push(`event <b>${esc(ev)}</b>`);
+  else bits.push(`<b>${esc(r.kind)}</b>`);
+  if (p.verdict) bits.push(`verdict <b>${esc(p.verdict)}</b>`);
+  else if (p.level) bits.push(`level <b>${esc(p.level)}</b>`);
+  if (p.schoolId) bits.push(esc(p.schoolId));
+  return bits.join(" · ");
+}
 function renderActivity() {
   const rows = state.ledger.slice(0, 10);
-  $("activity").innerHTML = rows.length ? rows.map(r =>
-    `<li><span class="seq">#${r.seq}</span><span class="bdg ${r.kind}">${esc(r.kind)}</span>
-     <span class="tx"><span class="ref">${esc(r.ref)}</span><span class="pl">${esc(JSON.stringify(r.payload).slice(0, 46))}</span></span>
-     <span class="ts">${timeAgo(r.ts)}</span></li>`).join("")
-    : `<li style="color:var(--faint)">Ledger is empty — run the morning.</li>`;
+  $("activity").innerHTML = rows.length ? rows.map(r => {
+    const pl = JSON.stringify(r.payload, null, 1);
+    return `<li><span class="seq">#${r.seq}</span><span class="bdg ${r.kind}">${esc(r.kind)}</span>
+     <span class="tx"><span class="ref">${esc(r.ref)}</span><span class="sum">${activitySummary(r)}</span>
+       <details class="det"><summary>payload <span class="det-len">${pl.length} bytes</span></summary><pre>${esc(pl)}</pre></details></span>
+     <span class="ts">${timeAgo(r.ts)}</span></li>`;
+  }).join("") : `<li style="color:var(--faint)">Ledger is empty — run the morning.</li>`;
 }
 
 /* ---------- schools list + detail ---------- */
@@ -1171,6 +1191,7 @@ function renderDetail() {
 function renderSchoolsView() { renderSchoolsTable(); renderDetail(); }
 
 /* ---------- agent ---------- */
+const STALE_MS = 90 * 60 * 1000;
 const QUICK = [
   ["How's school today?", "status"],
   ["Why?", "why"],
@@ -1187,8 +1208,10 @@ function seedAgentUI() {
 }
 function renderChatStart() {
   const sb = $("startBlock"); if (!sb) return;
+  const chatEl = document.querySelector(".chat");
   const empty = !$("chatlog").querySelector(".bub");
   sb.style.display = empty ? "" : "none";
+  if (chatEl) chatEl.classList.toggle("empty", empty);
   if (!empty || sb.dataset.done) return;
   sb.dataset.done = "1";
   sb.innerHTML = `<div class="bub ai" style="max-width:100%">
@@ -1422,10 +1445,12 @@ function renderChips() {
   const el = $("chipAsOf");
   if (el) {
     if (fetched) {
+      const age = Date.now() - new Date(fetched).getTime();
+      const stale = age > STALE_MS;
       el.style.display = "";
-      $("chipAsOfTxt").textContent = anyFallback ? "live · fell back" : "live inputs";
-      $("chipAsOfDot").style.background = anyFallback ? "var(--amber)" : "var(--good)";
-      el.title = `Live inputs last fetched at ${fmtIst(fetched)} (${timeAgo(fetched)}) — full provenance in the banner below.`;
+      $("chipAsOfTxt").textContent = anyFallback ? "live · fell back" : stale ? `live · ${timeAgo(fetched)} old` : "live inputs";
+      $("chipAsOfDot").style.background = stale ? "var(--red)" : anyFallback ? "var(--amber)" : "var(--good)";
+      el.title = `Live inputs last fetched at ${fmtIst(fetched)} — ${timeAgo(fetched)} old.${stale ? " STALE — refresh may be needed." : ""} Full provenance in the banner below.`;
     } else {
       el.style.display = "none";
     }
@@ -1453,13 +1478,14 @@ function renderProvenance() {
   const anyLive = order.some(k => (s[k] || {}).live);
   const anyFallback = order.some(k => (s[k] || {}).fallback);
   const fetched = (state.health && state.health.source && state.health.source.fetchedAt) || null;
+  const stale = !!fetched && (Date.now() - new Date(fetched).getTime()) > STALE_MS;
   const mode = anyLive ? "LIVE DATA" : "DEMO · FROZEN SNAPSHOT";
   const modeCls = anyLive ? "ok" : "warn";
   el.className = `banner ${anyFallback ? "bad" : modeCls}`;
   el.style.display = "";
   el.innerHTML = `<span class="tag ${modeCls}">${mode}</span>
     <div class="grow"><b>Live:</b> stations &amp; fires · <b>Frozen:</b> wind &amp; history · <b>Decision:</b> replayed scenario morning.${anyFallback ? " A live refresh fell back to the snapshot." : ""}
-    ${fetched ? `<span class="asof">live as of <b>${fmtIst(fetched)}</b> (${timeAgo(fetched)})</span>` : ""}</div>`;
+    ${fetched ? `<span class="asof">${stale ? `<span class="stale">STALE · ${timeAgo(fetched)} old</span>` : ""}live as of <b>${fmtIst(fetched)}</b> (${timeAgo(fetched)})</span>` : ""}</div>`;
 }
 
 /* ---------- run morning ---------- */
