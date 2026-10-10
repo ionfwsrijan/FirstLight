@@ -556,10 +556,10 @@
               <p class="card-sub" id="scenSub">Frozen NCR morning · 7 stations · stubble fires upwind of the wind shadow.</p>
               <div class="map-wrap" id="mapWrap"></div>
               <div class="map-legend">
-                <span><span class="lg pin"></span>school</span>
-                <span><span class="lg circ" style="background:#B9C3D8"></span>station</span>
-                <span><span class="lg" style="background:var(--amber)"></span>active fire</span>
-                <span><span class="lg" style="border:1.5px solid var(--amber);background:none"></span>contained</span>
+                <span><span class="lg circ" style="background:var(--brand);box-shadow:0 0 0 1.5px #42560a"></span>school</span>
+                <span><span class="lg circ" style="background:#c7cedb"></span>station</span>
+                <span><span class="lg" style="background:#cf8f22"></span>active fire</span>
+                <span><span class="lg" style="border:1.5px solid #cf8f22;background:none"></span>contained</span>
                 <span><span class="lg" style="background:#7aa300;border-radius:50%;height:3px;width:16px"></span>wind 310°</span>
               </div>
             </div>
@@ -847,19 +847,34 @@ function scenarioMap(inputs) {
     const b = bins[k];
     return { cx: b.x / b.n, cy: b.y / b.n, n: b.n, active: b.active };
   }).sort((a, b) => b.n - a.n);
+  const fireR = n => Math.min(11, 3.6 + Math.sqrt(n) * 1.7);
+  // fires are muted/lighter so the school markers draw the eye instead
   const fireDots = clusters.map(c => {
-    const cx = c.cx.toFixed(1), cy = c.cy.toFixed(1);
-    if (c.n === 1) return `<circle cx="${cx}" cy="${cy}" r="3.2" fill="var(--amber)" fill-opacity=".82" stroke="#fff" stroke-width="1"/>`;
-    const r = Math.min(12, 4 + Math.sqrt(c.n) * 1.9).toFixed(1);
-    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--amber)" fill-opacity=".2" stroke="var(--amber)" stroke-width="1.1"/>`
-      + `<circle cx="${cx}" cy="${cy}" r="2.3" fill="var(--amber)"/>`;
+    const px = c.cx.toFixed(1), py = c.cy.toFixed(1);
+    if (c.n === 1) return `<circle cx="${px}" cy="${py}" r="2.4" fill="#cf8f22" fill-opacity=".7"/>`;
+    return `<circle cx="${px}" cy="${py}" r="${fireR(c.n).toFixed(1)}" fill="#e0a02a" fill-opacity=".15" stroke="#cf8f22" stroke-width="1"/>
+      <circle cx="${px}" cy="${py}" r="1.6" fill="#c9831a" fill-opacity=".8"/>`;
   }).join("");
-  const fireLabs = clusters.filter(c => c.n >= 3).slice(0, 3).map(c =>
-    `<text x="${c.cx.toFixed(1)}" y="${(c.cy - Math.min(12, 4 + Math.sqrt(c.n) * 1.9) - 3).toFixed(1)}" text-anchor="middle" font-size="8" fill="#6b7167" font-weight="600" font-family="Inter,system-ui">${c.n} fires</text>`).join("");
+  // label only well-separated large clusters so the counts stop crowding each other
+  const chosen = [];
+  clusters.filter(c => c.n >= 4).forEach(c => {
+    if (chosen.length < 3 && chosen.every(p => Math.hypot(p.cx - c.cx, p.cy - c.cy) >= 46)) chosen.push(c);
+  });
+  const fireLabs = chosen.map(c => {
+    const rr = fireR(c.n);
+    const above = c.cy - rr - 6 > 9;
+    const ly = above ? c.cy - rr - 4 : c.cy + rr + 9;
+    return `<text x="${c.cx.toFixed(0)}" y="${ly.toFixed(0)}" text-anchor="middle" font-size="8" fill="#5f655b" font-weight="700" font-family="Inter,system-ui" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round">${c.n} fires</text>`;
+  }).join("");
   const stationDots = stations.map(s =>
-    `<rect x="${(x(s.lon) - 2.5).toFixed(1)}" y="${(y(s.lat) - 2.5).toFixed(1)}" width="5" height="5" rx="1.4" fill="#B9C3D8"/>`).join("");
-  const schoolPins = schools.map(s =>
-    `<g><circle cx="${x(s.lon)}" cy="${y(s.lat)}" r="4.5" fill="var(--brand)" stroke="#5f8000" stroke-width="1.4"/></g>`).join("");
+    `<circle cx="${x(s.lon).toFixed(1)}" cy="${y(s.lat).toFixed(1)}" r="2.1" fill="#c7cedb"/>`).join("");
+  const schoolPins = schools.map(s => {
+    const px = x(s.lon).toFixed(1), py = y(s.lat).toFixed(1);
+    return `<g transform="translate(${px},${py})">
+      <path d="M0 0 C-3.1 -5 -5.1 -7 -5.1 -9.6 A5.1 5.1 0 1 1 5.1 -9.6 C5.1 -7 3.1 -5 0 0 Z" fill="var(--brand)" stroke="#42560a" stroke-width="1.3" stroke-linejoin="round"/>
+      <circle cx="0" cy="-9.6" r="1.9" fill="#fff"/>
+    </g>`;
+  }).join("");
   const activeFires = fires.filter(f => f.status === "active").length;
   const d = inputs.wind.directionDeg;
   const toward = (d + 180) % 360;
