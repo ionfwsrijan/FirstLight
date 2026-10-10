@@ -970,23 +970,15 @@ function renderDashboard() {
   const maxAqi = dec.length ? dec.reduce((m, d) => (d.aqiEffective > m.aqiEffective ? d : m), dec[0]) : null;
   $("dashSub").textContent = `Decision morning ${ins.date} · ${ins.stations.length} stations · ${ins.fires.length} fires · wind ${ins.wind.directionDeg}° / ${ins.wind.speedKmh} km/h (${compass(ins.wind.directionDeg)})`;
 
-  // provenance: label every input with where it came from and when it was observed
+  // the provenance banner carries the detailed freshness; the map caption stays about geography
   const src = ins.source || {};
   const sf = (state.health && state.health.sources) || {};
   const staLive = sf.stations && sf.stations.live;
   const fireLive = (sf.fires && sf.fires.live) || src.source === "firms-live";
-  const latest = a => (a.length ? a[a.length - 1] : "");
-  const stT = latest(ins.stations.map(s => s.lastUpdatedUtc).filter(Boolean));
   const fetched = src.fetchedAt || (state.health && state.health.source && state.health.source.fetchedAt);
-  const hhmm = iso => (iso ? iso.slice(11, 16) : "");
-  const provTxt = (staLive || fireLive ? "Live inputs" : "Frozen snapshot")
-    + ` · stations ${staLive ? "live (CPCB AQI)" : "frozen"}${stT ? " " + hhmm(stT) + " UTC" : ""}`
-    + ` · fires ${fireLive ? "live (NASA FIRMS)" : "frozen"}`
-    + ` · wind & history frozen by design`
-    + (src.fallback ? " · a live refresh failed and fell back" : "")
-    + (fetched ? ` · live as of ${fmtIst(fetched)} (${timeAgo(fetched)})` : "");
-  $("scenSub").textContent = provTxt;
-  $("scenSub").title = fetched ? `live inputs last fetched ${new Date(fetched).toUTCString()}` : provTxt;
+  $("scenSub").textContent = "Schools & CPCB stations across Delhi NCR, with Punjab–Haryana stubble fires and the inbound wind"
+    + (staLive || fireLive ? " · live inputs" : " · frozen snapshot");
+  $("scenSub").title = fetched ? `Live inputs last fetched ${new Date(fetched).toUTCString()}` : "Scenario map";
 
   const kpi = [
     {cls:"good", t:"Schools open", v: cnt[0] || 0, s:`of ${n} schools`},
