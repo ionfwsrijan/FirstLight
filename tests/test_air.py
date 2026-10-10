@@ -117,10 +117,21 @@ class TestRefreshAir(unittest.TestCase):
         status = air.refresh_air(self.conn)
         self.assertEqual(status["source"], "frozen")
         self.assertTrue(status["fallback"])
-        self.assertIn("unreachable", status["error"])
+        field = source_status(self.conn)["stations"]
+        self.assertFalse(field["live"])
+        self.assertTrue(field["fallback"])
 
-        inputs, prov = effective_inputs_live(self.conn)
-        self.assertEqual(inputs.stations[0].aqi, STATIONS[0].aqi)
+    @mock.patch.object(air, "MIN_REFRESH_SECONDS", 0)
+    @mock.patch.object(air, "fetch_live_stations")
+    def test_live_then_failed_refresh_marks_field_fallback(self, fetch):
+        fetch.return_value = {s.id: 150 for s in STATIONS}
+        air.refresh_air(self.conn)
+        self.assertTrue(source_status(self.conn)["stations"]["live"])
+        fetch.side_effect = RuntimeError("upstream down")
+        air.refresh_air(self.conn)
+        field = source_status(self.conn)["stations"]
+        self.assertFalse(field["live"])
+        self.assertTrue(field["fallback"])
 
     @mock.patch.object(air, "fetch_live_stations")
     def test_backpressure_throttles_immediate_second_refresh(self, fetch):

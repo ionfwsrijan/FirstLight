@@ -12,7 +12,7 @@
 [![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2eb872)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-159%20passed-2eb872)](tests/)
+[![Tests](https://img.shields.io/badge/tests-161%20passed-2eb872)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-2eb872)](pyproject.toml)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
@@ -34,7 +34,7 @@ told, honestly, that only a principal or officer can dispatch.
 Nothing here depends on a model making the call. The class of 2026 does not get
 its school day decided by a coin toss or a temperature setting. The rules
 decide; the ledger proves it. The safety property is ordinary, deterministic
-code — tested **159 times**.
+code — tested **161 times**.
 
 ![FirstLight — the 6 AM decision](docs/assets/banner.svg)
 
@@ -151,7 +151,7 @@ and that it happened*. FirstLight's controls are in code, not in a prompt:
 ```bash
 make setup            # create .venv, install the package + dev deps
 make serve            # console at http://127.0.0.1:8000
-make test             # 159 tests; coverage floor 85%
+make test             # 161 tests; coverage floor 85%
 make lint             # ruff + mypy (clean)
 ```
 
@@ -210,7 +210,7 @@ firstlight/
 web/index.html    single-file, zero-build console (served identically by the twin)
 sam/              template.yaml · handlers/ (8 Lambdas) · build_layer.py · static/index.py
 docs/             architecture.md · LEARNINGS.md · submission.md · demo-script.md
-tests/            159 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+tests/            161 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
                   consent, tokens, roles, API, pipeline, CPCB AQI, FIRMS parsing, notifier, SAM-mirror
 ```
 
@@ -218,7 +218,7 @@ tests/            159 tests: bands, geometry, interpolation, plume, trend, DSL, 
 
 ```bash
 make help             # every target, one line each
-make test             # full gate (159 tests) + coverage
+make test             # full gate (161 tests) + coverage
 make lint             # ruff check + mypy
 cfn-lint sam/template.yaml
 sam validate --template sam/template.yaml --lint

@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sam")))
@@ -183,6 +184,24 @@ class TestShipItMirror(unittest.TestCase):
         self.assertEqual(response["statusCode"], 200)
         self.assertEqual(body["trigger"], "eventbridge")
         self.assertEqual({d["schoolId"]: d["levelName"] for d in body["decisions"]}, local)
+
+    def test_schedule_handler_live_refreshes_sources_before_running(self):
+        os.environ["SOURCE_MODE"] = "live"
+        try:
+            with mock.patch.object(
+                self.morning, "refresh_air_dyn", return_value={"source": "open-meteo-live", "count": 7}
+            ) as air_refresh, mock.patch.object(
+                self.morning, "refresh_fires_dyn", return_value={"source": "firms-live", "count": 80}
+            ) as fire_refresh:
+                response = self.morning.schedule_handler({"source": "aws.events"}, None)
+        finally:
+            os.environ.pop("SOURCE_MODE", None)
+        body = self._body(response)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertEqual(body["refreshed"]["stations"]["source"], "open-meteo-live")
+        self.assertEqual(body["refreshed"]["fires"]["source"], "firms-live")
+        air_refresh.assert_called_once()
+        fire_refresh.assert_called_once()
 
     def test_unknown_school_404(self):
         event = {"body": '{"text": "hi", "school_id": "nope"}', "requestContext": {}}

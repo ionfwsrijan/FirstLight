@@ -184,10 +184,14 @@
     background:var(--surface);padding:12px 14px;margin-bottom:16px;font-size:13px}
   .banner .grow{flex:1}
   .banner.ok{border-color:#BFE6CF;background:#F0FAF4}
+  .banner.warn{border-color:#F3DEAE;background:#FCF6E9}
   .banner.bad{border-color:#F4C4C4;background:#FDF1F1}
   .banner .check{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
   .banner.ok .check{background:var(--good);color:#fff}
   .banner.bad .check{background:var(--red);color:#fff}
+  .banner .tag{flex:0 0 auto;font-size:11px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border-radius:999px;color:#fff;background:#6b7280}
+  .banner .tag.ok{background:var(--good)}
+  .banner .tag.warn{background:#b7791f}
 
   /* table */
   .table-wrap{overflow-x:auto}
@@ -1196,19 +1200,23 @@ function renderChips() {
 function renderProvenance() {
   const el = $("provBanner"); if (!el) return;
   const s = (state.health && state.health.sources) || null;
-  if (!s) { el.style.display = "none"; return; }
-  const order = ["stations", "fires", "wind", "history"];
-  const parts = order.filter(k => s[k]).map(k => {
-    const f = s[k];
+  const keys = ["stations", "fires", "wind", "history"];
+  const order = keys.filter(k => s && s[k]);
+  if (!order.length) { el.style.display = "none"; return; }
+  const parts = order.map(k => {
+    const f = s[k] || {};
     const tag = f.live ? (f.fallback ? "LIVE · fell back" : "LIVE") : "frozen";
-    return `<b>${k}</b> ${tag}`;
+    return `${f.live ? "🟢" : "⚪"} <b>${k}</b> ${tag}`;
   });
-  const anyFallback = order.some(k => s[k] && s[k].fallback);
-  el.className = "banner " + (anyFallback ? "bad" : "ok");
+  const anyLive = order.some(k => (s[k] || {}).live);
+  const anyFallback = order.some(k => (s[k] || {}).fallback);
+  const mode = anyLive ? "LIVE DATA" : "DEMO · FROZEN SNAPSHOT";
+  const modeCls = anyLive ? "ok" : "warn";
+  el.className = `banner ${anyFallback ? "bad" : modeCls}`;
   el.style.display = "";
-  el.innerHTML = `<span class="check">${anyFallback ? "!" : "✓"}</span>
+  el.innerHTML = `<span class="tag ${modeCls}">${mode}</span>
     <div class="grow"><b>Data provenance.</b> ${parts.join(" · ")}.
-    Stations + fires can be live — with a visible fallback to the frozen snapshot on any failure.
+    Stations + fires can be live, with a visible fallback to the frozen snapshot on any failure.
     Wind + history are frozen by design for a reproducible demo.${anyFallback ? " A live refresh failed and fell back; shown honestly." : ""}</div>`;
 }
 
