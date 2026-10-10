@@ -7,15 +7,13 @@ the honest ledger of that: every input, every constant, and its source.
 
 | Input | In the demo | Live? | Source / note |
 |---|---|---|---|
-| Stubble fires | 7 fires, Punjab/Haryana, 07–08 Oct 2026 | **Live capable** | NASA FIRMS 24h `VIIRS_SNPP`/`MODIS` CSV — [`firstlight/pipeline/sources.py`](../firstlight/pipeline/sources.py). The demo defaults to the frozen snapshot; an officer's *Refresh fire data* swaps in the live feed and records provenance (source, timestamp, count, fallback). |
-| CPCB station AQI | 7 NCR stations | **Frozen** | Snapshot dated 2026-10-08 05:30 IST. Same dict shape as a real feed, so a live CPCB/OpenAQ fetcher is a one-file swap; not wired here. |
-| Wind | 310°, 16 km/h | **Frozen** | Scenario constant. |
+| Stubble fires | 7 fires, Punjab/Haryana, 07–08 Oct 2026 | **Live capable** | NASA FIRMS 24h `VIIRS_SNPP`/`MODIS` CSV — [`firstlight/pipeline/sources.py`](../firstlight/pipeline/sources.py). Deployed with `SOURCE_MODE=live`, the 6 AM schedule (and an officer's *Refresh*) fetches the live feed and records provenance (source, timestamp, count, fallback); on any failure it falls back to the frozen snapshot visibly. |
+| CPCB station AQI | 7 NCR stations | **Live capable** | [`firstlight/pipeline/air.py`](../firstlight/pipeline/air.py) fetches live PM2.5/PM10 from the key-free Open-Meteo air-quality API and converts to a **CPCB statutory AQI** via the CPCB PM2.5/PM10 sub-index breakpoints (Central Pollution Control Board, *National Air Quality Index*, 2014; AQI = max sub-index). Same fallback + provenance contract as fires; cached with a 60 s backpressure floor. |
+| Wind | 310°, 16 km/h | **Frozen** | Scenario constant (a real IMD observation would slot into the same spot). |
 | Prior mornings | 7 daily AQIs per school | **Frozen** | Used only as the trend baseline. |
 | Schools | 7 NCR schools | **Frozen** | Illustrative; not a real school directory. |
 
-Only the fires are genuinely day-to-day. Everything else is a fixed scenario so
-the demo is reproducible and the verdicts are byte-identical on every run — a
-deliberate trade for a hackathon, not a claim of a live deployment.
+Wind, prior mornings and the school directory stay frozen so a demo is reproducible; `SOURCE_MODE=live` (the deployed default) fetches the two inputs that genuinely change — station air and stubble fires — with a visible, recorded fallback to the frozen snapshot on any failure. `/health` and the console banner label every field live-vs-frozen, so nothing is overclaimed.
 
 ## Constants and where they come from
 

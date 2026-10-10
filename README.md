@@ -12,8 +12,8 @@
 [![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2eb872)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-132%20passed-2eb872)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-85%25-2eb872)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/tests-151%20passed-2eb872)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-86%25-2eb872)](pyproject.toml)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
 **Live console:** <https://8s2dtqrqzi.execute-api.ap-south-2.amazonaws.com/dev/> · **Architecture:** [docs/architecture.md](docs/architecture.md) · **Real vs simulated:** [docs/LEARNINGS.md](docs/LEARNINGS.md) · **Submission map:** [docs/submission.md](docs/submission.md) · **Ship It runbook:** [sam/README.md](sam/README.md) · **Try it locally:** `make setup && make serve`
@@ -34,7 +34,7 @@ told, honestly, that only a principal or officer can dispatch.
 Nothing here depends on a model making the call. The class of 2026 does not get
 its school day decided by a coin toss or a temperature setting. The rules
 decide; the ledger proves it. The safety property is ordinary, deterministic
-code — tested **132 times**.
+code — tested **151 times**.
 
 ![FirstLight — the 6 AM decision](docs/assets/banner.svg)
 
@@ -151,7 +151,7 @@ and that it happened*. FirstLight's controls are in code, not in a prompt:
 ```bash
 make setup            # create .venv, install the package + dev deps
 make serve            # console at http://127.0.0.1:8000
-make test             # 132 tests; coverage floor 85%
+make test             # 151 tests; coverage floor 85%
 make lint             # ruff + mypy (clean)
 ```
 
@@ -179,10 +179,14 @@ Outputs: **`ApiUrl`** (the live console), `UserPoolId`, `UserPoolClientId`,
 
 - **Reserved concurrency is off.** On a brand-new account the Lambda
   concurrency quota is too low to reserve safely, so the functions run
-  unreserved. Everything else (scoped IAM, PITR + SSE, active tracing) is on.
-- **Stations and wind are frozen;** only the fires are live (NASA FIRMS with a
-  visible fallback). A full feed is a swap of one fetcher — see
-  [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
+  unreserved. Everything else (scoped IAM, PITR + SSE, active tracing, error
+  alarms + SQS DLQ) is on.
+- **Two inputs are live; two are frozen — and it says which.** The deployed
+  twin runs `SOURCE_MODE=live`: a 6 AM EventBridge schedule (and an officer's
+  refresh) fetches live station air (Open-Meteo → CPCB AQI) and stubble fires
+  (NASA FIRMS), each with a visible, recorded fallback to the frozen snapshot.
+  Wind and prior mornings stay frozen for a reproducible demo. `GET /health`
+  returns per-field status under `sources`; see [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
 
 Runbook and least-privilege IAM notes: [`sam/README.md`](sam/README.md).
 
@@ -200,20 +204,21 @@ firstlight/
   notifier/       console / silent / SMTP / webhook dispatch abstraction (returns a receipt)
   storage/        SQLite (WAL) schema + repositories: stations, schools, fires, history,
                   decisions, alerts, users, agent transcript, provenance
-  pipeline/       morning run, live fire refresh (NASA FIRMS), provenance
+  pipeline/       morning run, live air (Open-Meteo → CPCB AQI), live fire refresh
+                  (NASA FIRMS), per-field provenance
   api/            FastAPI app: /api/health, /login, /schools, /decisions, /agent/talk, /ledger, ledger UI
 web/index.html    single-file, zero-build console (served identically by the twin)
-sam/              template.yaml · handlers/ (6 Lambdas) · build_layer.py · static/index.py
+sam/              template.yaml · handlers/ (8 Lambdas) · build_layer.py · static/index.py
 docs/             architecture.md · LEARNINGS.md · submission.md · demo-script.md
-tests/            132 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
-                  consent, tokens, roles, API, pipeline, FIRMS parsing, notifier, SAM-mirror
+tests/            151 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+                  consent, tokens, roles, API, pipeline, CPCB AQI, FIRMS parsing, notifier, SAM-mirror
 ```
 
 ## Development
 
 ```bash
 make help             # every target, one line each
-make test             # full gate (132 tests) + coverage
+make test             # full gate (151 tests) + coverage
 make lint             # ruff check + mypy
 cfn-lint sam/template.yaml
 sam validate --template sam/template.yaml --lint
@@ -241,6 +246,10 @@ What "production-minded" means here, and where each claim is enforced:
 | Notifier failures are logged and never take the morning down (a receipt or a `-failed` string) | `firstlight/notifier/__init__.py`, `tests/test_notifier.py` |
 | The morning is idempotent per school+date (upsert), committed atomically after the ledger append | `firstlight/pipeline/morning.py`, `firstlight/storage/repositories.py` |
 | Live fire refresh is officer-only; provenance (source, time, count, fallback) is persisted and labelled | `firstlight/pipeline/sources.py`, `tests/test_sources.py` |
+| Live station air: Open-Meteo → CPCB sub-index AQI; officer-only, cached with a 60 s backpressure floor, falls back visibly | `firstlight/pipeline/air.py`, `tests/test_air.py` |
+| `/health` states, per field, which inputs are live vs frozen and whether a live fetch fell back | `firstlight/pipeline/provenance.py`, `sam/handlers/meta.py`, `tests/test_air.py` |
+| The 6 AM run is autonomous: EventBridge schedule refreshes live sources then decides, independent of logins | `sam/handlers/morning.py` (`schedule_handler`), `sam/template.yaml` |
+| Failures are observable: CloudWatch error alarms → SNS; SQS DLQ on the scheduled async path | `sam/template.yaml` |
 | AWS resources: DynamoDB `PAY_PER_REQUEST` + PITR + SSE; arm64 Lambdas; active X-Ray tracing | `sam/template.yaml` |
 | The console is one file, no build; the served copy is checked for drift in CI | `web/index.html`, `sam/static/index.html`, `sam/build_layer.py --check` |
 

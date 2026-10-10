@@ -413,7 +413,7 @@
           <span class="dot" style="background:var(--primary)"></span>
           <span id="chipDateTxt">—</span>
         </span>
-        <span class="chipline hide-sm" id="chipSource" title="fire data provenance — frozen scenario vs live NASA FIRMS">
+        <span class="chipline hide-sm" id="chipSource" title="source provenance — frozen scenario vs live (Open-Meteo CPCB air + NASA FIRMS fires)"> 
           <span class="dot" id="chipSourceDot"></span>
           <span id="chipSourceTxt">—</span>
         </span>
@@ -448,6 +448,7 @@
         </div>
 
         <div class="banner" id="emptyBanner" style="display:none"></div>
+        <div class="banner ok" id="provBanner" style="display:none"></div>
 
         <div class="kpi-row" id="kpiRow"></div>
 
@@ -816,16 +817,19 @@ function renderDashboard() {
 
   // provenance: label every input with where it came from and when it was observed
   const src = ins.source || {};
+  const sf = (state.health && state.health.sources) || {};
+  const staLive = sf.stations && sf.stations.live;
   const latest = a => (a.length ? a[a.length - 1] : "");
   const stT = latest(ins.stations.map(s => s.lastUpdatedUtc).filter(Boolean));
   const frT = latest(ins.fires.map(f => f.detectedUtc).filter(Boolean));
   const winT = ins.wind.observedUtc || "";
   const hhmm = iso => (iso ? iso.slice(11, 16) : "—");
-  const live = src.source === "firms-live";
-  const provTxt = (live ? "Live source — " + (src.label || "NASA FIRMS") : "Frozen scenario snapshot")
-    + ` · stations ${hhmm(stT)} · fires detected ${hhmm(frT)} · wind ${hhmm(winT)} UTC`
-    + (src.fallback ? " · live refresh failed, fell back to frozen" : "");
+  const live = src.source === "firms-live" || staLive;
+  const provTxt = (live ? "Live source" : "Frozen scenario snapshot")
+    + ` · stations ${staLive ? "live (CPCB AQI)" : "frozen"} ${hhmm(stT)} · fires detected ${hhmm(frT)} · wind ${hhmm(winT)} UTC`
+    + (src.fallback ? " · fire refresh failed, fell back to frozen" : "");
   $("scenSub").textContent = provTxt;
+  $("scenSub").title = src.fetchedAt ? `last fire refresh ${src.fetchedAt}` : provTxt;
   $("scenSub").title = src.fetchedAt ? `last refresh ${src.fetchedAt}` : provTxt;
 
   const kpi = [
@@ -1167,9 +1171,13 @@ function renderChips() {
   $("chipDateTxt").textContent = ins ? ins.date : "—";
   $("chipWindTxt").textContent = ins ? `${Math.round(ins.wind.directionDeg)}° ${ins.wind.speedKmh} km/h · ${compass(ins.wind.directionDeg)}` : "—";
   const src = (ins && ins.source) || {};
-  const live = src.source === "firms-live";
-  $("chipSourceTxt").textContent = live ? "LIVE · FIRMS" : "FROZEN";
-  $("chipSourceDot").style.background = live ? "var(--good)" : "var(--amber)";
+  const sfields = (h && h.sources) || {};
+  const fireLive = (sfields.fires && sfields.fires.live) || src.source === "firms-live";
+  const staLive = (sfields.stations && sfields.stations.live);
+  const anyLive = fireLive || staLive;
+  const anyFallback = Object.values(sfields).some(f => f && f.fallback);
+  $("chipSourceTxt").textContent = anyLive ? (anyFallback ? "LIVE · FALLBACK" : "LIVE") : "FROZEN";
+  $("chipSourceDot").style.background = anyLive ? (anyFallback ? "var(--amber)" : "var(--good)") : "var(--amber)";
   $("chipSource").style.display = ins ? "" : "none";
   $("chipRulesetTxt").textContent = h.ruleset || "—";
   $("sidever").textContent = h.version || "0.2.0";
@@ -1182,6 +1190,26 @@ function renderChips() {
   $("opslabel").classList.toggle("hidden", state.role === "parent");
   $("runMorning").classList.toggle("hidden", state.role !== "officer");
   $("refreshFires").classList.toggle("hidden", state.role !== "officer");
+  renderProvenance();
+}
+
+function renderProvenance() {
+  const el = $("provBanner"); if (!el) return;
+  const s = (state.health && state.health.sources) || null;
+  if (!s) { el.style.display = "none"; return; }
+  const order = ["stations", "fires", "wind", "history"];
+  const parts = order.filter(k => s[k]).map(k => {
+    const f = s[k];
+    const tag = f.live ? (f.fallback ? "LIVE · fell back" : "LIVE") : "frozen";
+    return `<b>${k}</b> ${tag}`;
+  });
+  const anyFallback = order.some(k => s[k] && s[k].fallback);
+  el.className = "banner " + (anyFallback ? "bad" : "ok");
+  el.style.display = "";
+  el.innerHTML = `<span class="check">${anyFallback ? "!" : "✓"}</span>
+    <div class="grow"><b>Data provenance.</b> ${parts.join(" · ")}.
+    Stations + fires can be live — with a visible fallback to the frozen snapshot on any failure.
+    Wind + history are frozen by design for a reproducible demo.${anyFallback ? " A live refresh failed and fell back; shown honestly." : ""}</div>`;
 }
 
 /* ---------- run morning ---------- */
@@ -1254,7 +1282,9 @@ $("password").addEventListener("keydown", e => { if (e.key === "Enter") $("conti
     const h = await api("GET", "/api/health");
     state.health = h;
     const src = h.source || {};
-    $("loginhealth").innerHTML = `${h.app} ${h.version} · ${h.ruleset} · fires: ${src.source === "firms-live" ? "LIVE (FIRMS)" : "FROZEN scenario"}`;
+    const sf = h.sources || {};
+    const staLive = sf.stations && sf.stations.live;
+    $("loginhealth").innerHTML = `${h.app} ${h.version} · ${h.ruleset} · air: ${staLive ? "LIVE" : "FROZEN"} · fires: ${src.source === "firms-live" ? "LIVE (FIRMS)" : "FROZEN scenario"}`;
     $("chipRulesetTxt").textContent = h.ruleset || "—";
     $("sidever").textContent = h.version || "0.2.0";
   } catch (e) { $("loginhealth").textContent = "unreachable — is the server running?"; }

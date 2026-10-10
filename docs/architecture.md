@@ -44,14 +44,24 @@ as the local verdict:
 ```mermaid
 flowchart LR
     subgraph Cloud["On AWS · deployed (ap-south-2)"]
+        EB[EventBridge<br/>cron 06:00 IST] --> L0[<b>schedule</b> Lambda<br/>refresh + morning]
         CA[Cognito user pool<br/>parent / principal / officer] -->|ID token| APIGW[API Gateway · Cognito authorizer]
         APIGW --> L1[<b>morning</b> Lambda]
         APIGW --> L2[<b>status</b> Lambda]
         APIGW --> L3[<b>talk</b> Lambda · consent-gated]
-        L1 --> DDB[(DynamoDB<br/>decisions + alerts)]
+        APIGW --> L4[<b>meta</b> Lambda · read-only]
+        APIGW --> L5[<b>sources</b> Lambda · officer refresh]
+        L0 --> LIVE[Live sources<br/>Open-Meteo · NASA FIRMS]
+        L5 --> LIVE
+        L0 -.->|DLQ| SQ[(SQS DLQ)]
+        L0 --> CW[CloudWatch alarms → SNS]
+        L1 --> DDB[(DynamoDB<br/>decisions + alerts + ledger)]
         L3 --> DDB
+        L4 --> DDB
+        L0 --> DDB
         L1 -.-> LAYER[FirstLightCoreLayer<br/>firstlight package]
         L3 -.-> LAYER
+        L0 -.-> LAYER
     end
     subgraph Local["Build It · runs today, no account, no card"]
         LL1[FastAPI + SQLite] --> PLUG[Cedar policies<br/>firstlight/auth/cedar]

@@ -27,6 +27,14 @@ Parameters:
     Type: String
     Default: ""
     Description: Optional Slack/Teams webhook for alert delivery.
+  SourceMode:
+    Type: String
+    Default: live
+    AllowedValues: [live, frozen]
+    Description: >-
+      live fetches station air (Open-Meteo -> CPCB AQI) and stubble fires
+      (NASA FIRMS) with a visible fallback; frozen serves the deterministic
+      seeded scenario (used by CI so tests never touch the network).
 
 Globals:
   Function:
@@ -41,6 +49,7 @@ Globals:
         ENV: !Ref Env
         RULESET_VERSION: firstlight-rules-v2@2026-10
         ALERT_HOOK_URL: !Ref AlertHookUrl
+        SOURCE_MODE: !Ref SourceMode
         LOG_LEVEL: INFO
     Layers:
       - !Ref FirstLightCoreLayer
@@ -215,6 +224,7 @@ Resources:
               Authorizer: FirstLightAuthorizer
 
   # ---- Console data endpoints (mirror of the local /api/* surface) ----
+  # Read-only: this surface only reads, so it carries no write action at all.
   MetaHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -225,8 +235,6 @@ Resources:
             - Effect: Allow
               Action:
                 - dynamodb:GetItem
-                - dynamodb:PutItem
-                - dynamodb:UpdateItem
                 - dynamodb:Query
                 - dynamodb:Scan
               Resource:
@@ -289,13 +297,124 @@ Resources:
             Path: /outbox
             Method: GET
             RestApiId: !Ref FirstLightApi
-        RefreshFires:
+
+  # ---- Officer-only live source refresh (read/write; own scoped grant) ----
+  SourcesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: sources.handler
+      Timeout: 60
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt DecisionsTable.Arn
+                - !Sub ${DecisionsTable.Arn}/index/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
+      Events:
+        Api:
           Type: Api
           Properties:
             Path: /sources/refresh
             Method: POST
             RestApiId: !Ref FirstLightApi
 
+  # ---- The 6 AM on-call agent: EventBridge schedule, independent of logins ----
+  ScheduleHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/
+      Handler: morning.schedule_handler
+      Timeout: 60
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt DecisionsTable.Arn
+                - !Sub ${DecisionsTable.Arn}/index/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt ScheduleDlq.Arn
+      Events:
+        Morning6am:
+          Type: Schedule
+          Properties:
+            # 00:30 UTC == 06:00 Asia/Kolkata (the "6 AM" in the pitch)
+            Schedule: cron(30 0 * * ? *)
+            Description: FirstLight daily 6 AM school-air morning run
+            Enabled: true
+
+  # ---- Dead-letter queue for the scheduled (async) invocation path ----
+  ScheduleDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub firstlight-${Env}-schedule-dlq
+      MessageRetentionPeriod: 1209600
+
+  # ---- Alarm topic + alarms: the run is observable, not silent ----
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub firstlight-${Env}-alerts
+
+  ScheduleErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: FirstLight 6 AM schedule function reported errors.
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduleHandler
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+
+  SourcesErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: FirstLight live source refresh function reported errors.
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SourcesHandler
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
   # ---- The browser console (public static page, Cognito-backed login) ----
   UiHandler:
     Type: AWS::Serverless::Function

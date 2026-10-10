@@ -338,3 +338,172 @@ def principal_id(event: dict) -> str:
     claims = (event.get("requestContext") or {}).get("authorizer") or {}
     claims = (claims.get("claims") or {}) if isinstance(claims, dict) else {}
     return claims.get("sub", "unknown")
+
+
+# ---------- source provenance + live ingest (mirrors firstlight/pipeline) ----------
+# stations + fires may be live (with a visible fallback); wind + history are
+# frozen snapshots. Provenance is stored under pk=SOURCE so /health can state,
+# field by field, whether today's inputs are live or frozen.
+
+from dataclasses import asdict, replace  # noqa: E402
+
+from firstlight.domain import MorningInputs, StubbleFire  # noqa: E402
+from firstlight.pipeline.air import (  # noqa: E402
+    FALLBACK_AIR_STATUS,
+    fetch_live_stations,
+)
+from firstlight.pipeline.scenario import (  # noqa: E402
+    DATE,
+    FIRES,
+    HISTORY,
+    SCHOOLS,
+    STATIONS,
+    WIND,
+)
+
+SOURCE_PK = "SOURCE"
+SOURCE_MODE = os.environ.get("SOURCE_MODE", "frozen")
+MIN_REFRESH_SECONDS = 60
+
+
+def _age_seconds(payload: dict | None) -> float | None:
+    if not isinstance(payload, dict) or not payload.get("fetchedAt"):
+        return None
+    try:
+        fetched = datetime.fromisoformat(payload["fetchedAt"])
+    except (ValueError, TypeError):
+        return None
+    return (datetime.now(UTC) - fetched).total_seconds()
+
+
+def put_source(name: str, payload: dict) -> None:
+    _table().put_item(Item=_to_dynamo({
+        "pk": SOURCE_PK, "sk": name, "payload": json.dumps(payload, sort_keys=True),
+    }))
+
+
+def get_source(name: str) -> dict | None:
+    item = _table().get_item(Key={"pk": SOURCE_PK, "sk": name}).get("Item")
+    return json.loads(item["payload"]) if item else None
+
+
+def _fires_status(payload: dict | None) -> dict:
+    status = dict(_FALLBACK_STATUS)
+    if payload:
+        status.update({k: payload.get(k, status.get(k)) for k in status})
+        status["count"] = len(payload.get("fires") or []) or status["count"]
+    return status
+
+
+def _air_status(payload: dict | None) -> dict:
+    status = dict(FALLBACK_AIR_STATUS)
+    if payload:
+        status.update({k: payload.get(k, status.get(k)) for k in status})
+        status["count"] = len(payload.get("stations") or []) or status["count"]
+    return status
+
+
+def refresh_fires_dyn(timeout: float = 8.0) -> dict:
+    from firstlight.pipeline.sources import fetch_live_fires
+
+    cached = get_source("fires")
+    age = _age_seconds(cached)
+    if age is not None and age < MIN_REFRESH_SECONDS:
+        status = _fires_status(cached)
+        status["throttled"] = True
+        return status
+
+    now = now_utc()
+    try:
+        fires = fetch_live_fires(timeout)
+        payload = {
+            "source": "firms-live", "label": "NASA FIRMS · live 24h", "fetchedAt": now,
+            "count": len(fires), "fallback": False, "error": None,
+            "fires": [asdict(f) for f in fires],
+        }
+    except Exception as exc:  # noqa: BLE001 - any failure falls back, visibly
+        payload = {
+            "source": "frozen", "label": "Frozen scenario snapshot", "fetchedAt": now,
+            "count": len(FIRES), "fallback": True, "error": str(exc), "fires": None,
+        }
+    put_source("fires", payload)
+    return _fires_status(payload)
+
+
+def refresh_air_dyn(timeout: float = 8.0) -> dict:
+    cached = get_source("air")
+    age = _age_seconds(cached)
+    if age is not None and age < MIN_REFRESH_SECONDS:
+        status = _air_status(cached)
+        status["throttled"] = True
+        return status
+
+    now = now_utc()
+    try:
+        readings = fetch_live_stations(STATIONS, timeout)
+        payload = {
+            "source": "open-meteo-live", "label": "Open-Meteo air quality → CPCB AQI",
+            "fetchedAt": now, "count": len(readings), "fallback": False, "error": None,
+            "stations": [{"id": sid, "aqi": aqi} for sid, aqi in readings.items()],
+        }
+    except Exception as exc:  # noqa: BLE001 - any failure falls back, visibly
+        payload = {
+            "source": "frozen", "label": "Frozen scenario snapshot", "fetchedAt": now,
+            "count": len(STATIONS), "fallback": True, "error": str(exc), "stations": None,
+        }
+    put_source("air", payload)
+    return _air_status(payload)
+
+
+def effective_stations_dyn() -> tuple:
+    payload = get_source("air")
+    if isinstance(payload, dict) and payload.get("stations"):
+        by_id = {s["id"]: s["aqi"] for s in payload["stations"]}
+        return tuple(
+            replace(s, aqi=by_id[s.id]) if s.id in by_id else s for s in STATIONS
+        )
+    return STATIONS
+
+
+def effective_fires_dyn() -> tuple:
+    payload = get_source("fires")
+    if isinstance(payload, dict) and payload.get("fires"):
+        return tuple(StubbleFire(**f) for f in payload["fires"])
+    return FIRES
+
+
+def effective_inputs_dyn() -> MorningInputs:
+    return MorningInputs(
+        DATE, effective_stations_dyn(), SCHOOLS, effective_fires_dyn(), WIND, HISTORY
+    )
+
+
+def source_status_dyn() -> dict:
+    air = _air_status(get_source("air"))
+    fires = _fires_status(get_source("fires"))
+    days = len(next(iter(HISTORY.values()))) if HISTORY else 0
+
+    def field(live, provider, fetched, count, fallback=False, error=None):
+        return {
+            "live": live, "provider": provider, "fetchedAt": fetched,
+            "count": count, "fallback": fallback, "error": error,
+        }
+
+    return {
+        "stations": field(air["source"] != "frozen", air["label"], air["fetchedAt"],
+                          air["count"], air["fallback"], air["error"]),
+        "fires": _fire_status_field(fires),
+        "wind": field(False, "IMD observation · frozen scenario", WIND.observed_utc, 1),
+        "history": field(False, f"Seeded prior mornings · {days} days", None, days),
+    }
+
+
+def _fire_status_field(fires: dict) -> dict:
+    return {
+        "live": fires["source"] != "frozen",
+        "provider": fires["label"],
+        "fetchedAt": fires["fetchedAt"],
+        "count": fires["count"],
+        "fallback": fires["fallback"],
+        "error": fires["error"],
+    }

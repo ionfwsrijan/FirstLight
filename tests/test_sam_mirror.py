@@ -16,6 +16,9 @@ class _FakeTable:
         self.puts.append(Item)
         self.items.append(Item)
 
+    def get_item(self, Key):
+        return {"Item": None}
+
     def update_item(self, **kw):
         self._counter += 1
         return {"Attributes": {"c": self._counter}}
@@ -47,10 +50,12 @@ class TestShipItMirror(unittest.TestCase):
         sys.modules["boto3"] = _FakeBoto3()
         from sam.handlers import meta as mm  # noqa: PLC0415
         from sam.handlers import morning as m  # noqa: PLC0415
+        from sam.handlers import sources as s  # noqa: PLC0415
         from sam.handlers import talk as t  # noqa: PLC0415
 
         self.morning = m
         self.meta = mm
+        self.sources = s
         self.talk = t
 
     @staticmethod
@@ -142,15 +147,42 @@ class TestShipItMirror(unittest.TestCase):
             self.assertEqual(response["statusCode"], 200, path)
             self.assertIn("body", response)
 
-    def test_meta_refresh_is_honest_frozen(self):
+    def test_meta_health_reports_every_field(self):
+        event = {"httpMethod": "GET", "path": "/health", "requestContext": {}}
+        body = self._body(self.meta.handler(event, None))
+        self.assertEqual(body["source"]["source"], "frozen")
+        for name in ("stations", "fires", "wind", "history"):
+            self.assertIn(name, body["sources"])
+            self.assertFalse(body["sources"][name]["live"])
+
+    def test_sources_refresh_is_honest_frozen_without_live_mode(self):
+        os.environ.pop("SOURCE_MODE", None)
         event = {"httpMethod": "POST", "path": "/sources/refresh",
                  "requestContext": {"authorizer": {"claims": {"sub": "kapoor",
                                                               "email": "officer@firstlight.demo"}}}}
-        response = self.meta.handler(event, None)
+        response = self.sources.handler(event, None)
         body = self._body(response)
         self.assertEqual(response["statusCode"], 200)
         self.assertEqual(body["source"], "frozen")
         self.assertTrue(body["fallback"])
+
+    def test_sources_refresh_denied_for_parent(self):
+        event = {"httpMethod": "POST", "path": "/sources/refresh",
+                 "requestContext": {"authorizer": {"claims": {"sub": "meera",
+                                                              "email": "parent@firstlight.demo"}}}}
+        self.assertEqual(self.sources.handler(event, None)["statusCode"], 403)
+
+    def test_schedule_handler_runs_frozen_and_matches_local(self):
+        from firstlight.engine import decide_all
+        from firstlight.pipeline.scenario import morning_inputs
+
+        local = {d.school_id: d.level.name_short for d in decide_all(morning_inputs())}
+        os.environ.pop("SOURCE_MODE", None)
+        response = self.morning.schedule_handler({"source": "aws.events"}, None)
+        body = self._body(response)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertEqual(body["trigger"], "eventbridge")
+        self.assertEqual({d["schoolId"]: d["levelName"] for d in body["decisions"]}, local)
 
     def test_unknown_school_404(self):
         event = {"body": '{"text": "hi", "school_id": "nope"}', "requestContext": {}}

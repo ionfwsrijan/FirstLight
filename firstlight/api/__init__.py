@@ -50,7 +50,8 @@ from ..config import settings
 from ..engine import decide_school
 from ..ledger import Ledger
 from ..notifier import build as build_notifier
-from ..pipeline import effective_inputs, run_morning
+from ..pipeline import effective_inputs_live, run_morning, source_status
+from ..pipeline.air import refresh_air
 from ..pipeline.sources import read_status
 from ..pipeline.sources import refresh as refresh_fire_source
 from ..storage import AlertsRepo, DecisionsRepo, SchoolsRepo, TranscriptRepo, UsersRepo, connect
@@ -111,6 +112,7 @@ def health() -> dict:
     conn = _db()
     try:
         source = read_status(conn)
+        sources = source_status(conn)
     finally:
         conn.close()
     return {
@@ -119,6 +121,7 @@ def health() -> dict:
         "version": settings.version,
         "ruleset": RULESET_VERSION,
         "source": source,
+        "sources": sources,
     }
 
 
@@ -134,11 +137,13 @@ def console() -> FileResponse:
 def get_inputs() -> dict:
     conn = _db()
     try:
-        inputs, status = effective_inputs(conn)
+        inputs, provenance = effective_inputs_live(conn)
+        sources = source_status(conn)
     finally:
         conn.close()
     payload = inputs.to_dict()
-    payload["source"] = status
+    payload["source"] = provenance["fires"]
+    payload["sources"] = sources
     return payload
 
 
@@ -146,11 +151,11 @@ def get_inputs() -> dict:
 def run(claims: Annotated[dict, Depends(_auth)]) -> dict:
     _require(claims, "run:morning")
     conn = _db()
-    inputs, status = effective_inputs(conn)
+    inputs, provenance = effective_inputs_live(conn)
     result = run_morning(conn, settings, inputs, as_user=claims["sub"])
     conn.close()
     out = result.to_dict()
-    out["source"] = status
+    out["source"] = provenance["fires"]
     return out
 
 
@@ -159,11 +164,13 @@ def sources_refresh(claims: Annotated[dict, Depends(_auth)]) -> dict:
     _require(claims, "run:morning")  # officer only
     conn = _db()
     try:
-        status = refresh_fire_source(conn)
+        fires = refresh_fire_source(conn)
+        air = refresh_air(conn)
+        sources = source_status(conn)
     finally:
         conn.close()
-    log.info("fire source refresh -> %s (%s)", status["source"], status["count"])
-    return status
+    log.info("source refresh -> fires=%s(%s) air=%s(%s)", fires["source"], fires["count"], air["source"], air["count"])
+    return {**fires, "air": air, "sources": sources}
 
 
 @app.get("/api/schools")
@@ -192,7 +199,7 @@ def talk(payload: TalkPayload, claims: Annotated[dict, Depends(_auth)]) -> dict:
         caller = claims["sub"]
         intent = parse(payload.text)
 
-        inputs, provenance = effective_inputs(conn)
+        inputs, provenance = effective_inputs_live(conn)
         school = next((s for s in inputs.schools if s.id == payload.school_id), None)
         if school is None:
             raise HTTPException(status_code=404, detail=f"no school {payload.school_id}")

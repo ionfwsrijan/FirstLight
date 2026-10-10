@@ -4,45 +4,48 @@ The deployed console is the SAME page as the local build (web/index.html is
 copied into the UiHandler bundle), so this handler exposes the exact route
 contract the page fetches, minus the leading /api:
 
-  GET  /health            liveness + ruleset + source provenance (public)
-  GET  /inputs            morning inputs as frozen scenario + provenance
+  GET  /health            liveness + ruleset + per-field source provenance (public)
+  GET  /inputs            morning inputs (live sources when refreshed) + provenance
   GET  /schools           all schools
   GET  /decisions/{id}    latest saved decisions for a school
   GET  /transcript        persisted agent conversation
   GET  /ledger            recent hash-chained ledger rows (officer)
   GET  /ledger/verify     recompute the hash chain (officer)
   GET  /outbox            delivered alerts, channel + receipt (principal/officer)
-  POST /sources/refresh   explicit FIRMS refresh (officer) — honest frozen stub
+
+This handler is read-only: the officer-only POST /sources/refresh lives in its
+own function (sources.py) so it can carry a scoped read/write policy while this
+one keeps a read-only grant.
 """
 
 from __future__ import annotations
 
 import os
 
-from firstlight.pipeline.scenario import morning_inputs
-
-try:
+try:  # Lambda treats handlers/ as the code root (no package parent)
     from .shared import (
-        _FALLBACK_STATUS,
         cognito_role,
         decisions_for,
+        effective_inputs_dyn,
         ledger_entries,
         ledger_verify,
         outbox_messages,
         principal_id,
         respond,
+        source_status_dyn,
         transcript_turns,
     )
-except ImportError:  # Lambda treats handlers/ as the code root (no package parent)
+except ImportError:
     from shared import (
-        _FALLBACK_STATUS,
         cognito_role,
         decisions_for,
+        effective_inputs_dyn,
         ledger_entries,
         ledger_verify,
         outbox_messages,
         principal_id,
         respond,
+        source_status_dyn,
         transcript_turns,
     )
 
@@ -55,18 +58,21 @@ def _health() -> dict:
         "app": "FirstLight",
         "version": _VERSION,
         "ruleset": os.environ.get("RULESET_VERSION", ""),
-        "source": dict(_FALLBACK_STATUS),
+        "source": _fires_view(),
+        "sources": source_status_dyn(),
     }
 
 
-def _refresh_stub() -> dict:
-    status = dict(_FALLBACK_STATUS)
-    status["fallback"] = True
-    status["error"] = (
-        "live NASA FIRMS refresh is a Build It local feature; "
-        "the mirror serves the deterministic frozen scenario"
-    )
-    return status
+def _fires_view() -> dict:
+    fields = source_status_dyn()["fires"]
+    return {
+        "source": "frozen" if not fields["live"] else "live",
+        "label": fields["provider"],
+        "fetchedAt": fields["fetchedAt"],
+        "count": fields["count"],
+        "fallback": fields["fallback"],
+        "error": fields["error"],
+    }
 
 
 def _require(event: dict, *roles: str):
@@ -91,19 +97,19 @@ def handler(event: dict, _context) -> dict:
         ("GET", "/ledger"),
         ("GET", "/ledger/verify"),
         ("GET", "/outbox"),
-        ("POST", "/sources/refresh"),
     ]
     is_described = (method, path) in described or (
         method == "GET" and path.startswith("/decisions/")
     )
     if not is_described:
-        return respond(404, {"error": f"no such endpoint /login{path}"})
+        return respond(404, {"error": f"no such endpoint {method} {path}"})
 
-    inputs = morning_inputs()
+    inputs = effective_inputs_dyn()
 
     if method == "GET" and path == "/inputs":
         payload = inputs.to_dict()
-        payload["source"] = dict(_FALLBACK_STATUS)
+        payload["source"] = _fires_view()
+        payload["sources"] = source_status_dyn()
         return respond(200, payload)
 
     if method == "GET" and path == "/schools":
@@ -135,11 +141,5 @@ def handler(event: dict, _context) -> dict:
         if path == "/ledger/verify":
             return respond(200, ledger_verify())
         return respond(200, {"entries": ledger_entries(25)})
-
-    if method == "POST" and path == "/sources/refresh":
-        blocked = _require(event, "officer")
-        if blocked:
-            return blocked
-        return respond(200, _refresh_stub())
 
     return respond(404, {"error": f"no such endpoint {method} {path}"})
