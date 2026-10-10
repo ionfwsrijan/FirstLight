@@ -461,12 +461,12 @@
   @media(max-width:620px){.prompts{flex-wrap:wrap;overflow:visible}.prompts .pl,.prompts button{flex:0 0 auto;white-space:nowrap}}
   .bub .meta{font-size:11px}
   .replay-chip,.status-fresh,.status-stale,.status-fallback,.status-frozen,.status-mixed,.status-unknown{font-variant-numeric:tabular-nums}
-  @media(max-width:1100px){#chipWind,#chipRuleset{display:none}}
+  @media(max-width:1100px){#chipWind,#chipRuleset{display:none}.topbar .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}.topbar .chips::-webkit-scrollbar{display:none}}
   @media(max-width:620px){
     .topbar{height:auto;min-height:68px;padding:10px 14px;flex-wrap:wrap;gap:8px}
     .topbar>.menu-btn{order:0}
     .topbar>.menu-btn+div{order:1;flex:1;min-width:120px}
-    .topbar>.chips{order:2;flex:1 0 100%;margin-left:0;justify-content:flex-start}
+    .topbar>.chips{order:2;flex:1 0 100%;margin-left:0;justify-content:flex-start;flex-wrap:wrap;overflow:visible}
     .chips .chipline{font-size:11.5px;padding:7px 10px}
     .sec-head .hint{font-size:12px}
     .card-sub{font-size:12.5px}
@@ -1032,6 +1032,10 @@ document.querySelectorAll(".nav-item").forEach(b =>
 $("menubtn").onclick = () => $("sidebar").classList.toggle("open");
 $("logoutbtn").onclick = () => location.reload();
 
+const refreshFreshness = () => { if (state.role) { renderChips(); renderProvenance(); } };
+setInterval(refreshFreshness, 30000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshFreshness(); });
+
 /* ---------- decide/full helpers ---------- */
 function decisionFor(schoolId) {
   const f = state.full[schoolId];
@@ -1514,7 +1518,7 @@ function renderChips() {
     $("chipAsOfTxt").textContent = anyFallback ? "FALLBACK ACTIVE" : !anyLive ? "FROZEN DATA" : !hasTimestamp ? "UPDATE TIME UNKNOWN" : stale ? `STALE · ${durAgo(fetched)}` : `FRESH · ${durAgo(fetched)}`;
     $("chipAsOfDot").style.background = anyFallback || stale ? "var(--red)" : anyLive && hasTimestamp ? "var(--good)" : "var(--amber)";
     el.title = anyFallback ? "Live refresh fell back to the frozen scenario snapshot." : !anyLive ? "The displayed inputs are from a frozen scenario snapshot." : hasTimestamp
-      ? `Source timestamp: ${fmtIst(fetched)} · ${timeAgo(fetched)}.${stale ? " Older than the 90-minute freshness window." : " Within the 90-minute freshness window."} Full provenance in the banner below.`
+      ? `Source timestamp: ${fmtIst(fetched)} · ${durAgo(fetched)}.${stale ? " Older than the 90-minute freshness window." : " Within the 90-minute freshness window."} Full provenance in the banner below.`
       : "Live source is reported, but its update timestamp is unavailable.";
   }
   $("chipRulesetTxt").textContent = h.ruleset || "—";
@@ -1553,7 +1557,7 @@ function renderProvenance() {
     : !anyLive
       ? "No live inputs; the scenario snapshot is frozen."
     : hasTimestamp
-      ? `${stale ? "STALE · last updated" : "Last updated"} ${timeAgo(fetched)} · ${fmtIst(fetched)}${stale ? " · outside the 90-minute freshness window" : ""}.`
+      ? `${stale ? "STALE · last updated" : "Last updated"} ${durAgo(fetched)} · ${fmtIst(fetched)}${stale ? " · outside the 90-minute freshness window" : ""}.`
       : "Live source reported; update timestamp unavailable.";
   el.className = `banner ${anyFallback ? "bad" : modeCls}`;
   el.style.display = "";
