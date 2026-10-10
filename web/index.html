@@ -303,6 +303,15 @@
     font-size:11.5px;color:var(--muted);overflow-x:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Consolas,monospace}
   .feed .ts{margin-left:auto;color:var(--faint);font-size:11px;white-space:nowrap}
   .feed .hash{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:var(--faint)}
+  .lg-summary{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .lg-summary b{color:var(--text)}
+  .det{margin-top:7px;font-size:11.5px}
+  .det summary{cursor:pointer;color:var(--faint);font-weight:600;user-select:none;display:flex;align-items:center;gap:6px}
+  .det summary:hover{color:var(--primary)}
+  .det[open] summary{margin-bottom:2px}
+  .det-len{font-weight:400;color:var(--faint)}
+  .det pre{margin:6px 0 0;padding:8px 10px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;
+    font-size:10.5px;color:var(--muted);overflow-x:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Consolas,monospace}
 
   @media(max-width:980px){
     .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .22s ease;box-shadow:var(--shadow)}
@@ -625,7 +634,7 @@
         </div>
         <div class="agent-grid">
           <div class="card chat">
-            <div class="chatlog" id="chatlog" role="log" aria-live="polite" aria-label="Conversation with the 6 AM agent"></div>
+            <div class="chatlog" id="chatlog" role="log" aria-live="polite" aria-label="Conversation with the 6 AM agent"><div id="startBlock"></div></div>
             <div class="composer">
               <select id="agSchool"></select>
               <input id="agMsg" placeholder="e.g. is today safe for school?">
@@ -1168,12 +1177,28 @@ function seedAgentUI() {
     if (state.selected) $("agSchool").value = state.selected;
   }
 }
+function renderChatStart() {
+  const sb = $("startBlock"); if (!sb) return;
+  const empty = !$("chatlog").querySelector(".bub");
+  sb.style.display = empty ? "" : "none";
+  $("quick").style.display = empty ? "none" : "";
+  if (!empty || sb.dataset.done) return;
+  sb.dataset.done = "1";
+  sb.innerHTML = `<div class="bub ai" style="max-width:100%">
+      <b>Good morning. I'm the 6 AM decision agent.</b> I read the scenario and explain it like the officer's desk — what's
+      decided, why, and which schools are affected. I never guess, and I never send unless you say <b>send it</b> and
+      confirm in the same turn.<span class="meta">pick a school above, then try one of these prompts:</span></div>
+    <div class="quick" style="margin-top:4px">${QUICK.map(([t]) => `<button>${t}</button>`).join("")}</div>`;
+  sb.querySelectorAll("button").forEach((b, i) =>
+    b.addEventListener("click", () => { $("agMsg").value = QUICK[i][0]; talk(); }));
+}
 function renderAgent() {
   seedAgentUI();
   const sid = $("agSchool").value;
   if (state.trLoaded !== sid) loadTranscript(sid);
   renderLastSent();
   renderConsentBox();
+  renderChatStart();
 }
 function renderLastSent() {
   if (state.role !== "parent" && state.outbox.length) {
@@ -1193,6 +1218,7 @@ async function loadTranscript(schoolId) {
     (r.turns || []).forEach(t =>
       addBubble(t.speaker === "user" ? "user" : "ai", t.text,
         t.speaker === "agent" ? `intent <b>${esc(t.intent)}</b> · turn ${t.turn}` : ""));
+    renderChatStart();
     state.trLoaded = schoolId;
   } catch (e) { /* keep whatever is showing; hydration must never blank the chat */ }
 }
@@ -1270,11 +1296,26 @@ $("agSchool").addEventListener("change", () => loadTranscript($("agSchool").valu
 $("quick").innerHTML = QUICK.map(([t]) => `<button>${t}</button>`).join("");
 $("quick").querySelectorAll("button").forEach((b, i) =>
   b.addEventListener("click", () => { $("agMsg").value = QUICK[i][0]; talk(); }));
+renderChatStart();
 
 /* ---------- ledger ---------- */
 async function loadLedger() {
   const r = await api("GET", "/api/ledger");
   state.ledger = r.entries || [];
+}
+function ledgerSummary(r) {
+  const p = r.payload || {};
+  const bits = [];
+  if (p.verdict) bits.push(`verdict <b>${esc(p.verdict)}</b>`);
+  if (p.level) bits.push(`level <b>${esc(p.level)}</b>`);
+  if (p.intent) bits.push(`intent <b>${esc(p.intent)}</b>`);
+  const del = p.delivery || {};
+  if (p.action === "send" || del.receipt || del.channel) {
+    const ch = String(del.channel || ""), rc = String(del.receipt || "");
+    const sim = !ch || /^(noop|none)$/i.test(ch) || !rc || /^(noop|none)$/i.test(rc);
+    bits.push(`delivery <b>${sim ? "simulated" : esc(ch) + " → " + esc(rc)}</b>`);
+  }
+  return bits.length ? bits.join(" · ") : "";
 }
 function renderLedger() {
   $("ledgerSub").textContent = state.ledger.length ? `${state.ledger.length} rows · latest first` : "—";
@@ -1282,8 +1323,9 @@ function renderLedger() {
     const pl = JSON.stringify(r.payload, null, 1);
     return `<li><span class="seq">#${r.seq}</span>
       <div class="body">
-        <div class="top"><span class="bdg ${r.kind}">${esc(r.kind)}</span><span class="ref">${esc(r.ref)}</span><span class="ts">${esc(r.ts)}</span></div>
-        <pre>${esc(pl)}</pre>
+        <div class="top"><span class="bdg ${r.kind}">${esc(r.kind)}</span><span class="ref">${esc(r.ref)}</span><span class="ts"><b>${esc(r.ts)}</b></span></div>
+        ${ledgerSummary(r) ? `<div class="lg-summary">${ledgerSummary(r)}</div>` : ""}
+        <details class="det"><summary>payload <span class="det-len">${pl.length} bytes</span></summary><pre>${esc(pl)}</pre></details>
       </div></li>`;
   }).join("") : `<li style="color:var(--faint)">Ledger is empty — run the 6 AM morning.</li>`;
 }
@@ -1313,15 +1355,21 @@ async function loadOutbox() {
 function outboxCard(m) {
   const l = levelInfo(m.level);
   const when = String(m.issuedUtc || "").replace("T", " ").slice(0, 16);
+  const sim = !m.channel || /^(noop|none|local)$/i.test(String(m.channel)) || !m.receipt || /^(noop|none)$/i.test(String(m.receipt));
+  const channel = sim ? "local (simulated)" : m.channel;
+  const receipt = sim ? "demo — no real delivery" : m.receipt;
+  const cert = m.cert || "";
   return `<div class="consent-card" style="margin-top:0">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span class="chip ${l.cls}"><span class="dot"></span>${l.name}</span>
       <b>${esc(m.schoolId)}</b>
-      <span style="margin-left:auto;color:var(--faint);font-size:11px">${esc(when)} UTC</span>
+      ${sim ? `<span class="consent-tag no-send">SIMULATED DELIVERY</span>` : `<span class="consent-tag sent-ok">DELIVERED</span>`}
+      <span style="margin-left:auto;color:var(--faint);font-size:11px"><b style="color:var(--muted)">${esc(when)}</b> UTC</span>
     </div>
     <div style="margin-top:6px;font-size:12.5px">${esc(m.message)}</div>
-    <div style="color:var(--faint);font-size:11.5px;margin-top:6px">via <b>${esc(m.channel || "—")}</b> → receipt <b>${esc(m.receipt || "—")}</b> · by ${esc(m.issuedBy || "—")}</div>
-    <pre style="margin:6px 0 0;font-size:10.5px">${esc((m.cert || "").slice(0, 120))}${(m.cert || "").length > 120 ? "…" : ""}</pre>
+    <div style="color:var(--faint);font-size:11.5px;margin-top:6px">via <b>${esc(channel)}</b> → receipt <b>${esc(receipt)}</b> · by ${esc(m.issuedBy || "—")}</div>
+    ${cert ? `<details class="det" open><summary>certificate <span class="det-len">${cert.length} bytes</span></summary><pre>${esc(cert)}</pre></details>`
+      : `<div style="margin-top:6px;color:var(--faint);font-size:11px">no certificate recorded</div>`}
   </div>`;
 }
 function renderOutbox() {
