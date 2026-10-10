@@ -36,6 +36,8 @@ its school day decided by a coin toss or a temperature setting. The rules
 decide; the ledger proves it. The safety property is ordinary, deterministic
 code — tested **132 times**.
 
+![FirstLight — the 6 AM decision](docs/assets/banner.svg)
+
 ## Try it in two minutes, no AWS account
 
 ```bash
@@ -59,6 +61,8 @@ frontend build.
 ---
 
 ## What it does, in one cold morning
+
+![FirstLight architecture](docs/assets/architecture.svg)
 
 <details open>
 <summary>Architecture (Mermaid — renders on GitHub)</summary>

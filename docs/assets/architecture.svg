@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="600" viewBox="0 0 1120 600" role="img" aria-label="FirstLight architecture">
+  <title>FirstLight architecture</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a1120"/>
+      <stop offset="1" stop-color="#101a30"/>
+    </linearGradient>
+    <linearGradient id="aqi" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2eb872"/>
+      <stop offset="0.33" stop-color="#f2c94c"/>
+      <stop offset="0.66" stop-color="#ea8a00"/>
+      <stop offset="1" stop-color="#8a1320"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#5b7099"/>
+    </marker>
+    <style>
+      .h{font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;fill:#e8eefa}
+      .s{font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:12.5px;fill:#a3b4d1}
+      .cap{font-family:'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;fill:#7f92b5;letter-spacing:.06em}
+      .acc{fill:#ff8a3d}
+    </style>
+  </defs>
+
+  <rect width="1120" height="600" fill="url(#bg)"/>
+
+  <text x="24" y="34" class="cap">1 · THE DETERMINISTIC CORE — shared byte-for-byte with the local build</text>
+
+  <!-- pipeline cards -->
+  <g>
+    <rect x="24" y="48" width="190" height="118" rx="12" fill="#111c33" stroke="#2b3b5e"/>
+    <text x="40" y="74" class="h">Ingest · 06:00</text>
+    <text x="40" y="98" class="s">7 stations</text>
+    <text x="40" y="117" class="s">7 schools · 7 fires</text>
+    <text x="40" y="136" class="s">7 prior mornings</text>
+    <text x="40" y="155" class="s">frozen snapshot</text>
+  </g>
+  <g>
+    <rect x="234" y="48" width="190" height="118" rx="12" fill="#111c33" stroke="#2b3b5e"/>
+    <text x="250" y="74" class="h">Interpolate</text>
+    <text x="250" y="98" class="s">IDW over the</text>
+    <text x="250" y="117" class="s">4 nearest CPCB</text>
+    <text x="250" y="136" class="s">stations</text>
+  </g>
+  <g>
+    <rect x="444" y="48" width="190" height="118" rx="12" fill="#111c33" stroke="#2b3b5e"/>
+    <text x="460" y="74" class="h">Plume + trend</text>
+    <text x="460" y="98" class="s">upwind reach + FRP</text>
+    <text x="460" y="117" class="s">+ 7-day baseline</text>
+    <text x="460" y="136" class="s">rising / stable</text>
+  </g>
+  <g>
+    <rect x="654" y="48" width="190" height="118" rx="12" fill="#111c33" stroke="#2b3b5e"/>
+    <text x="670" y="74" class="h">Rule DSL · 7 rules</text>
+    <text x="670" y="98" class="s">CPCB bands (2014)</text>
+    <text x="670" y="117" class="s">CAQM GRAP stages</text>
+    <text x="670" y="136" class="s">highest match wins</text>
+  </g>
+  <g>
+    <rect x="864" y="48" width="232" height="118" rx="12" fill="#152741" stroke="#ff8a3d" stroke-width="1.6"/>
+    <text x="880" y="74" class="h">Verdict</text>
+    <text x="880" y="100" class="s">GREEN · PROTECTED · CLOSED</text>
+    <rect x="880" y="116" width="200" height="9" rx="4.5" fill="url(#aqi)"/>
+    <text x="880" y="150" class="s">per school · with evidence</text>
+  </g>
+
+  <!-- arrows row 1 -->
+  <line x1="214" y1="107" x2="234" y2="107" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="424" y1="107" x2="444" y2="107" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="634" y1="107" x2="654" y2="107" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="844" y1="107" x2="864" y2="107" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- down from verdict -->
+  <path d="M980 166 L980 196 L280 196 L280 236" fill="none" stroke="#5b7099" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M980 166 L980 196 L840 196 L840 236" fill="none" stroke="#5b7099" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+
+  <text x="24" y="222" class="cap">2 · TRUST + DISPATCH</text>
+
+  <!-- left panel: persist + prove -->
+  <rect x="24" y="236" width="500" height="230" rx="12" fill="#0e1830" stroke="#22334f"/>
+  <text x="44" y="262" class="h">Persist + prove</text>
+  <rect x="44" y="276" width="460" height="58" rx="9" fill="#111c33" stroke="#2b3b5e"/>
+  <text x="60" y="300" class="s">Store — decisions · alerts · transcript</text>
+  <text x="60" y="320" class="s">SQLite+WAL locally · DynamoDB (PITR + SSE) on AWS</text>
+  <line x1="274" y1="334" x2="274" y2="356" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="44" y="356" width="460" height="92" rx="9" fill="#111c33" stroke="#2b3b5e"/>
+  <text x="60" y="380" class="s">Ledger — append-only SHA-256 hash chain</text>
+  <text x="60" y="400" class="s">verify() recomputes the chain and reports the first broken row;</text>
+  <text x="60" y="420" class="s">tamper with any row and the trail fails loudly.</text>
+  <text x="60" y="440" class="s">Every alert also carries an HMAC certificate, verifiable offline.</text>
+
+  <!-- right panel: ask + consent + dispatch -->
+  <rect x="576" y="236" width="520" height="230" rx="12" fill="#0e1830" stroke="#22334f"/>
+  <text x="596" y="262" class="h">Ask + consent + dispatch</text>
+  <rect x="596" y="276" width="480" height="44" rx="9" fill="#111c33" stroke="#2b3b5e"/>
+  <text x="612" y="303" class="s">Agent /talk — deterministic intent + narration (en + Hindi/Hinglish)</text>
+  <line x1="836" y1="320" x2="836" y2="334" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="596" y="334" width="480" height="44" rx="9" fill="#152741" stroke="#f2c94c"/>
+  <text x="612" y="361" class="s">Consent gate — send intent AND explicit confirm in the SAME turn</text>
+  <line x1="740" y1="378" x2="700" y2="404" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="920" y1="378" x2="960" y2="404" stroke="#5b7099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="596" y="404" width="248" height="46" rx="9" fill="#111c33" stroke="#2eb872"/>
+  <text x="612" y="424" class="s">principal / officer</text>
+  <text x="612" y="442" class="s">→ Notifier · exactly once</text>
+  <rect x="856" y="404" width="220" height="46" rx="9" fill="#111c33" stroke="#8a1320"/>
+  <text x="872" y="424" class="s">parent / unknown</text>
+  <text x="872" y="442" class="s">→ refused + recorded</text>
+
+  <!-- footer AWS strip -->
+  <rect x="24" y="492" width="1072" height="80" rx="12" fill="#111c33" stroke="#2b3b5e"/>
+  <text x="44" y="520" class="h">On AWS (ap-south-2)</text>
+  <text x="44" y="545" class="s">API Gateway (REST + Cognito authorizer) · Lambda (arm64) · DynamoDB single table · Cognito roles ·</text>
+  <text x="44" y="564" class="s">scoped inline IAM (least privilege) · X-Ray tracing · SAM + cfn-lint clean · the core ships as a Lambda layer</text>
+  <rect x="940" y="512" width="140" height="42" rx="21" fill="#16223f" stroke="#2b3b5e"/>
+  <text x="1010" y="538" class="h" text-anchor="middle" font-size="13">Cedar too</text>
+</svg>

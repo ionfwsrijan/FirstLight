@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="FirstLight — the 6 AM on-call agent for school air">
+  <title>FirstLight</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#070c17"/>
+      <stop offset="0.55" stop-color="#0e1830"/>
+      <stop offset="1" stop-color="#16223f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff8a3d" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="1" stop-color="#ff6a3d"/>
+    </linearGradient>
+    <linearGradient id="aqi" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2eb872"/>
+      <stop offset="0.33" stop-color="#f2c94c"/>
+      <stop offset="0.66" stop-color="#ea8a00"/>
+      <stop offset="1" stop-color="#8a1320"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="320" fill="url(#sky)"/>
+
+  <!-- sunrise -->
+  <ellipse cx="180" cy="215" rx="190" ry="150" fill="url(#glow)"/>
+  <circle cx="180" cy="212" r="74" fill="url(#sun)"/>
+  <clipPath id="horizonClip"><rect x="0" y="216" width="360" height="104"/></clipPath>
+  <rect x="0" y="216" width="360" height="104" fill="#0b1324"/>
+
+  <!-- school silhouettes on the horizon -->
+  <g fill="#0b1324" stroke="#2b3b5e" stroke-width="1.5">
+    <rect x="70" y="176" width="46" height="40" rx="2"/>
+    <polygon points="66,176 93,156 120,176"/>
+    <rect x="150" y="188" width="34" height="28" rx="2"/>
+    <polygon points="147,188 167,174 187,188"/>
+    <rect x="240" y="182" width="52" height="34" rx="2"/>
+    <polygon points="236,182 266,162 296,182"/>
+  </g>
+  <g fill="#ffd166">
+    <rect x="82" y="188" width="6" height="6"/>
+    <rect x="98" y="188" width="6" height="6"/>
+    <rect x="160" y="196" width="5" height="5"/>
+    <rect x="256" y="192" width="6" height="6"/>
+    <rect x="272" y="192" width="6" height="6"/>
+  </g>
+  <line x1="0" y1="216" x2="1200" y2="216" stroke="#26375a" stroke-width="1"/>
+
+  <!-- wordmark -->
+  <text x="360" y="128" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="68" font-weight="700" fill="#ffffff" letter-spacing="1">First<tspan fill="#ff8a3d">Light</tspan></text>
+  <text x="362" y="170" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="23" fill="#c7d3ea">The 6 AM on-call agent for the air a child breathes.</text>
+
+  <!-- claim chips -->
+  <g font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15">
+    <rect x="362" y="196" width="150" height="30" rx="15" fill="#16223f" stroke="#2b3b5e"/>
+    <text x="437" y="216" fill="#9fd6b4" text-anchor="middle">CPCB bands</text>
+    <rect x="522" y="196" width="156" height="30" rx="15" fill="#16223f" stroke="#2b3b5e"/>
+    <text x="600" y="216" fill="#f0c46b" text-anchor="middle">CAQM GRAP</text>
+    <rect x="688" y="196" width="156" height="30" rx="15" fill="#16223f" stroke="#2b3b5e"/>
+    <text x="766" y="216" fill="#f0a07a" text-anchor="middle">Consent-gated</text>
+    <rect x="854" y="196" width="214" height="30" rx="15" fill="#16223f" stroke="#2b3b5e"/>
+    <text x="961" y="216" fill="#a9c1ea" text-anchor="middle">Hash-chained receipts</text>
+  </g>
+
+  <!-- AQI band strip -->
+  <rect x="362" y="248" width="706" height="12" rx="6" fill="url(#aqi)"/>
+  <text x="362" y="284" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#7f8fb0">GREEN · PROTECTED · CLOSED — decided by rules, delivered once, verifiable forever.</text>
+</svg>
