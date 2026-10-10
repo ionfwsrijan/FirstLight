@@ -12,7 +12,7 @@
 [![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2eb872)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-161%20passed-2eb872)](tests/)
+[![Tests](https://img.shields.io/badge/tests-163%20passed-2eb872)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-2eb872)](pyproject.toml)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
@@ -34,7 +34,7 @@ told, honestly, that only a principal or officer can dispatch.
 Nothing here depends on a model making the call. The class of 2026 does not get
 its school day decided by a coin toss or a temperature setting. The rules
 decide; the ledger proves it. The safety property is ordinary, deterministic
-code — tested **161 times**.
+code — tested **163 times**.
 
 ![FirstLight — the 6 AM decision](docs/assets/banner.svg)
 
@@ -142,7 +142,7 @@ and that it happened*. FirstLight's controls are in code, not in a prompt:
    ([`tests/test_sam_mirror.py`](tests/test_sam_mirror.py)).
 7. **Roles fail closed.** Every call checks the token and the Cedar matrix; 401,
    403 and 404 are all covered by tests, and the public surface is exactly
-   `/health`, `/login` and `/`.
+   `/api/health`, `/api/auth/login` and `/`.
 
 ## Run it
 
@@ -151,7 +151,7 @@ and that it happened*. FirstLight's controls are in code, not in a prompt:
 ```bash
 make setup            # create .venv, install the package + dev deps
 make serve            # console at http://127.0.0.1:8000
-make test             # 161 tests; coverage floor 85%
+make test             # 163 tests; coverage floor 85%
 make lint             # ruff + mypy (clean)
 ```
 
@@ -185,7 +185,7 @@ Outputs: **`ApiUrl`** (the live console), `UserPoolId`, `UserPoolClientId`,
   twin runs `SOURCE_MODE=live`: a 6 AM EventBridge schedule (and an officer's
   refresh) fetches live station air (Open-Meteo → CPCB AQI) and stubble fires
   (NASA FIRMS), each with a visible, recorded fallback to the frozen snapshot.
-  Wind and prior mornings stay frozen for a reproducible demo. `GET /health`
+  Wind and prior mornings stay frozen for a reproducible demo. `GET /api/health`
   returns per-field status under `sources`; see [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
 
 Runbook and least-privilege IAM notes: [`sam/README.md`](sam/README.md).
@@ -206,11 +206,12 @@ firstlight/
                   decisions, alerts, users, agent transcript, provenance
   pipeline/       morning run, live air (Open-Meteo → CPCB AQI), live fire refresh
                   (NASA FIRMS), per-field provenance
-  api/            FastAPI app: /api/health, /login, /schools, /decisions, /agent/talk, /ledger, ledger UI
+  api/            FastAPI app: /api/health, /api/auth/login, /api/morning/*, /api/schools,
+                  /api/decisions, /api/agent/talk, /api/ledger, ledger UI
 web/index.html    single-file, zero-build console (served identically by the twin)
 sam/              template.yaml · handlers/ (8 Lambdas) · build_layer.py · static/index.py
 docs/             architecture.md · LEARNINGS.md · submission.md · demo-script.md
-tests/            161 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+tests/            163 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
                   consent, tokens, roles, API, pipeline, CPCB AQI, FIRMS parsing, notifier, SAM-mirror
 ```
 
@@ -218,7 +219,7 @@ tests/            161 tests: bands, geometry, interpolation, plume, trend, DSL, 
 
 ```bash
 make help             # every target, one line each
-make test             # full gate (161 tests) + coverage
+make test             # full gate (163 tests) + coverage
 make lint             # ruff check + mypy
 cfn-lint sam/template.yaml
 sam validate --template sam/template.yaml --lint

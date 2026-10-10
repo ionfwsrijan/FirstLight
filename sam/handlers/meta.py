@@ -2,16 +2,18 @@
 
 The deployed console is the SAME page as the local build (web/index.html is
 copied into the UiHandler bundle), so this handler exposes the exact route
-contract the page fetches, minus the leading /api:
+contract the page fetches. The paths mirror the local `/api/*` surface exactly
+(the same console calls the same URLs against both); a leading `/api` is
+stripped here so the handler also answers bare `/health` etc. for manual calls:
 
-  GET  /health            liveness + ruleset + per-field source provenance (public)
-  GET  /inputs            morning inputs (live sources when refreshed) + provenance
-  GET  /schools           all schools
-  GET  /decisions/{id}    latest saved decisions for a school
-  GET  /transcript        persisted agent conversation
-  GET  /ledger            recent hash-chained ledger rows (officer)
-  GET  /ledger/verify     recompute the hash chain (officer)
-  GET  /outbox            delivered alerts, channel + receipt (principal/officer)
+  GET  /api/health            liveness + ruleset + per-field provenance (public)
+  GET  /api/morning/inputs    morning inputs (live sources when refreshed) + provenance
+  GET  /api/schools           all schools
+  GET  /api/decisions/{id}    latest saved decisions for a school
+  GET  /api/transcript        persisted agent conversation
+  GET  /api/ledger            recent hash-chained ledger rows (officer)
+  GET  /api/ledger/verify     recompute the hash chain (officer)
+  GET  /api/outbox            delivered alerts, channel + receipt (principal/officer)
 
 This handler is read-only: the officer-only POST /sources/refresh lives in its
 own function (sources.py) so it can carry a scoped read/write policy while this
@@ -85,6 +87,10 @@ def _require(event: dict, *roles: str):
 def handler(event: dict, _context) -> dict:
     method = event.get("httpMethod", "GET")
     path = (event.get("path") or "").rstrip("/") or "/"
+    if path == "/api" or path.startswith("/api/"):
+        path = path[4:] or "/"
+    if path == "/morning/inputs":
+        path = "/inputs"
 
     # Public: used by the login overlay before any token exists.
     if method == "GET" and path == "/health":

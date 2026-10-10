@@ -27,11 +27,11 @@ that proves it. No claim here without a pointer.
 | Deployed, reachable console | Live API + console from `sam/` (Lambda + API Gateway + DynamoDB + Cognito) |
 | Same engine in the cloud | [`sam/build_layer.py`](../sam/build_layer.py) packages the exact `firstlight` core; [`tests/test_sam_mirror.py`](../tests/test_sam_mirror.py) asserts cloud verdicts equal local |
 | Autonomous scheduled run | EventBridge `cron(30 0 * * ? *)` (06:00 IST) → `morning.schedule_handler`; runs with no login. [`sam/template.yaml`](../sam/template.yaml) |
-| Live data, honest fallback | `SOURCE_MODE=live` fetches station air ([`firstlight/pipeline/air.py`](../firstlight/pipeline/air.py), Open-Meteo → CPCB AQI) and stubble fires ([`firstlight/pipeline/sources.py`](../firstlight/pipeline/sources.py), NASA FIRMS); any failure falls back to the frozen snapshot with recorded provenance. Per-field status at `GET /health` → `sources`. |
+| Live data, honest fallback | `SOURCE_MODE=live` fetches station air ([`firstlight/pipeline/air.py`](../firstlight/pipeline/air.py), Open-Meteo → CPCB AQI) and stubble fires ([`firstlight/pipeline/sources.py`](../firstlight/pipeline/sources.py), NASA FIRMS); any failure falls back to the frozen snapshot with recorded provenance. Per-field status at `GET /api/health` → `sources`. |
 | Least-privilege IAM | [`sam/template.yaml`](../sam/template.yaml): per-function inline policies scoped to one table / one Cognito pool action — no broad managed policies. Meta handler is read-only; the officer refresh writes in its own function. |
 | Data durability | DynamoDB PITR + SSE, stream enabled |
 | Observability & failure handling | X-Ray active on functions and stage; CloudWatch error alarms → SNS topic; SQS DLQ on the scheduled (async) path |
-| AuthN/AuthZ | Cognito authorizer on every protected route; `/health`, `/login`, `/` public by design |
+| AuthN/AuthZ | Cognito authorizer on every protected route; `/api/health`, `/api/auth/login`, `/` public by design |
 
 ## Rigor judges can attack
 

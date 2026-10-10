@@ -156,6 +156,18 @@ class TestShipItMirror(unittest.TestCase):
             self.assertIn(name, body["sources"])
             self.assertFalse(body["sources"][name]["live"])
 
+    def test_meta_answers_under_the_api_prefix_like_the_console_calls(self):
+        event = {"httpMethod": "GET", "path": "/api/health", "requestContext": {}}
+        response = self.meta.handler(event, None)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertEqual(self._body(response)["app"], "FirstLight")
+
+    def test_meta_inputs_under_the_morning_path(self):
+        event = {"httpMethod": "GET", "path": "/api/morning/inputs", "requestContext": {}}
+        response = self.meta.handler(event, None)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertIn("schools", self._body(response))
+
     def test_sources_refresh_is_honest_frozen_without_live_mode(self):
         os.environ.pop("SOURCE_MODE", None)
         event = {"httpMethod": "POST", "path": "/sources/refresh",

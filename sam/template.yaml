@@ -153,7 +153,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /morning
+            Path: /api/morning/run
             Method: POST
             RestApiId: !Ref FirstLightApi
             Auth:
@@ -184,7 +184,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /status
+            Path: /api/status
             Method: GET
             RestApiId: !Ref FirstLightApi
             Auth:
@@ -217,7 +217,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /talk
+            Path: /api/agent/talk
             Method: POST
             RestApiId: !Ref FirstLightApi
             Auth:
@@ -250,7 +250,7 @@ Resources:
         Health:
           Type: Api
           Properties:
-            Path: /health
+            Path: /api/health
             Method: GET
             RestApiId: !Ref FirstLightApi
             Auth:
@@ -258,43 +258,43 @@ Resources:
         Inputs:
           Type: Api
           Properties:
-            Path: /inputs
+            Path: /api/morning/inputs
             Method: GET
             RestApiId: !Ref FirstLightApi
         Schools:
           Type: Api
           Properties:
-            Path: /schools
+            Path: /api/schools
             Method: GET
             RestApiId: !Ref FirstLightApi
         Decisions:
           Type: Api
           Properties:
-            Path: /decisions/{schoolId}
+            Path: /api/decisions/{schoolId}
             Method: GET
             RestApiId: !Ref FirstLightApi
         Transcript:
           Type: Api
           Properties:
-            Path: /transcript
+            Path: /api/transcript
             Method: GET
             RestApiId: !Ref FirstLightApi
         Ledger:
           Type: Api
           Properties:
-            Path: /ledger
+            Path: /api/ledger
             Method: GET
             RestApiId: !Ref FirstLightApi
         LedgerVerify:
           Type: Api
           Properties:
-            Path: /ledger/verify
+            Path: /api/ledger/verify
             Method: GET
             RestApiId: !Ref FirstLightApi
         Outbox:
           Type: Api
           Properties:
-            Path: /outbox
+            Path: /api/outbox
             Method: GET
             RestApiId: !Ref FirstLightApi
 
@@ -326,7 +326,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /sources/refresh
+            Path: /api/sources/refresh
             Method: POST
             RestApiId: !Ref FirstLightApi
 
@@ -457,7 +457,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /login
+            Path: /api/auth/login
             Method: POST
             RestApiId: !Ref FirstLightApi
             Auth:

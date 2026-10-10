@@ -65,10 +65,10 @@ be re-recorded any number of times and the verdicts never change.
 
 ## Shot 7 — the gate (2:40–3:00)
 
-- `py -m firstlight.cli gate` → **161 tests, OK**.
+- `py -m firstlight.cli gate` → **163 tests, OK**.
 - Close on the tagline: *"FirstLight — the 6 AM on-call agent for the air a
   child breathes."*
 
 ## The 60-second fallback (if the film must be shorter)
 
-Shot 3 → Shot 4 (consent) → Shot 6 (Cedar/SAM) → Shot 7 (gate, 161 tests).
+Shot 3 → Shot 4 (consent) → Shot 6 (Cedar/SAM) → Shot 7 (gate, 163 tests).
