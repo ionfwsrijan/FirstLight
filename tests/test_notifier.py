@@ -121,9 +121,80 @@ class TestBuildFactory(unittest.TestCase):
         self.assertIsInstance(built, notifier.WebhookNotifier)
         self.assertEqual(built.url, "https://hooks.example/y")
 
+    def test_sns_channel_uses_topic_arn(self):
+        cfg = dataclasses.replace(Settings(), sns_topic_arn="arn:aws:sns:ap-south-2:1:t")
+        built = notifier.build("sns", cfg)
+        self.assertIsInstance(built, notifier.SnsNotifier)
+        self.assertEqual(built.topic_arn, "arn:aws:sns:ap-south-2:1:t")
+
+    def test_telegram_channel_uses_token_and_chat(self):
+        cfg = dataclasses.replace(Settings(), telegram_token="tok", telegram_chat_id="42")
+        built = notifier.build("telegram", cfg)
+        self.assertIsInstance(built, notifier.TelegramNotifier)
+        self.assertEqual((built.token, built.chat_id), ("tok", "42"))
+
     def test_silent_and_default_channels(self):
         self.assertIsInstance(notifier.build("silent", Settings()), notifier.SilentNotifier)
         self.assertIsInstance(notifier.build("anything-else", Settings()), notifier.ConsoleNotifier)
+
+
+class TestSnsNotifier(unittest.TestCase):
+    def test_unconfigured_says_no_subscribers(self):
+        receipt = notifier.SnsNotifier("").notify(
+            school_id="s-avini", level="CLOSED", message="x"
+        )
+        self.assertEqual(receipt, "sns-unconfigured-s-avini (no subscribers)")
+
+    def test_publish_uses_topic_and_returns_message_id(self):
+        n = notifier.SnsNotifier("arn:aws:sns:ap-south-2:1:alerts")
+        client = mock.MagicMock()
+        client.publish.return_value = {"MessageId": "abc-123"}
+        fake_boto3 = mock.MagicMock()
+        fake_boto3.client.return_value = client
+        with mock.patch.dict(sys.modules, {"boto3": fake_boto3}):
+            receipt = n.notify(school_id="s-guard", level="PROTECTED", message="masks")
+        self.assertEqual(receipt, "sns-abc-123")
+        self.assertEqual(client.publish.call_args.kwargs["TopicArn"], "arn:aws:sns:ap-south-2:1:alerts")
+
+    def test_failure_is_swallowed_and_recorded(self):
+        n = notifier.SnsNotifier("arn:aws:sns:ap-south-2:1:alerts")
+        fake_boto3 = mock.MagicMock()
+        fake_boto3.client.side_effect = RuntimeError("denied")
+        with mock.patch.dict(sys.modules, {"boto3": fake_boto3}), redirect_stdout(io.StringIO()):
+            receipt = n.notify(school_id="s-avini", level="CLOSED", message="x")
+        self.assertEqual(receipt, "sns-failed-s-avini")
+
+
+class TestTelegramNotifier(unittest.TestCase):
+    def test_unconfigured_says_no_subscribers(self):
+        receipt = notifier.TelegramNotifier("", "").notify(
+            school_id="s-avini", level="CLOSED", message="x"
+        )
+        self.assertEqual(receipt, "telegram-unconfigured-s-avini (no subscribers)")
+
+    def test_success_posts_to_bot_api(self):
+        n = notifier.TelegramNotifier("tok", "42")
+        captured = {}
+
+        def fake_urlopen(req, timeout=0):
+            captured["url"] = req.full_url
+            captured["body"] = req.data
+            return mock.MagicMock()
+
+        with mock.patch.object(notifier.urllib.request, "urlopen", side_effect=fake_urlopen):
+            receipt = n.notify(school_id="s-gurugram", level="PROTECTED", message="shut windows")
+
+        self.assertEqual(receipt, "telegram-s-gurugram")
+        self.assertIn("api.telegram.org/bottok/sendMessage", captured["url"])
+        self.assertEqual(json.loads(captured["body"])["chat_id"], "42")
+
+    def test_failure_is_swallowed(self):
+        n = notifier.TelegramNotifier("tok", "42")
+        with mock.patch.object(notifier.urllib.request, "urlopen", side_effect=OSError("dns")):
+            self.assertEqual(
+                n.notify(school_id="s-avini", level="CLOSED", message="x"),
+                "telegram-failed-s-avini",
+            )
 
 
 if __name__ == "__main__":

@@ -45,6 +45,9 @@ class Settings:
     smtp_user: str = os.environ.get("FIRSTLIGHT_SMTP_USER", "")
     smtp_password: str = os.environ.get("FIRSTLIGHT_SMTP_PASSWORD", "")
     webhook_url: str = os.environ.get("FIRSTLIGHT_WEBHOOK_URL", "")
+    sns_topic_arn: str = os.environ.get("FIRSTLIGHT_SNS_TOPIC_ARN", "")
+    telegram_token: str = os.environ.get("FIRSTLIGHT_TELEGRAM_TOKEN", "")
+    telegram_chat_id: str = os.environ.get("FIRSTLIGHT_TELEGRAM_CHAT_ID", "")
     log_level: str = os.environ.get("FIRSTLIGHT_LOG", "INFO")
 
     @property
