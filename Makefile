@@ -4,16 +4,24 @@ STACK ?= firstlight-shipit
 REGION ?= ap-south-2
 ENV ?= dev
 
-.PHONY: install layer gate lint type test cov check sam-build deploy smoke clean
+.PHONY: install layer gate lint type test cov check sam-build deploy smoke clean setup serve
 
 install:            ## install runtime + dev dependencies
 	$(PY) -m pip install -e ".[dev]"
+
+setup: install      ## alias for install (first-run convenience)
 
 layer:              ## build the Lambda core layer + refresh the served console
 	$(PY) sam/build_layer.py
 
 gate: install       ## run the full test suite (the commit gate)
 	$(PY) -m firstlight.cli gate
+
+test: gate          ## alias for gate
+
+serve:              ## run the local console + API at http://127.0.0.1:8000
+	$(PY) -m firstlight.cli seed
+	$(PY) -m firstlight.cli serve
 
 lint:               ## ruff
 	$(PY) -m ruff check .

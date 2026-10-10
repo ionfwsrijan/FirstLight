@@ -43,7 +43,7 @@ as the local verdict:
 
 ```mermaid
 flowchart LR
-    subgraph Cloud["On AWS (when the account clears)"]
+    subgraph Cloud["On AWS · deployed (ap-south-2)"]
         CA[Cognito user pool<br/>parent / principal / officer] -->|ID token| APIGW[API Gateway · Cognito authorizer]
         APIGW --> L1[<b>morning</b> Lambda]
         APIGW --> L2[<b>status</b> Lambda]
@@ -53,7 +53,7 @@ flowchart LR
         L1 -.-> LAYER[FirstLightCoreLayer<br/>firstlight package]
         L3 -.-> LAYER
     end
-    subgraph Local["runs today, no account, no card"]
+    subgraph Local["Build It · runs today, no account, no card"]
         LL1[FastAPI + SQLite] --> PLUG[Cedar policies<br/>firstlight/auth/cedar]
     end
 ```
