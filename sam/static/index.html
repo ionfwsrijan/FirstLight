@@ -742,6 +742,9 @@ const state = {
 };
 
 const BAND_HEX = {"Good":"#2eb872","Satisfactory":"#a3c000","Moderate":"#f7d800","Poor":"#ea8a00","Very Poor":"#c04a00","Severe":"#8a1320"};
+// darker, text-safe variants of the band colours (the bright ones fail on white)
+const BAND_INK = {"Good":"#1e8a54","Satisfactory":"#6d8200","Moderate":"#8a6d00","Poor":"#b25f00","Very Poor":"#9c3a00","Severe":"#8a1320"};
+const bandInk = (label, hex) => BAND_INK[label] || hex || "#5f655b";
 const LEVEL = ["GREEN","PROTECTED","CLOSED"];
 
 function levelInfo(v) {
@@ -825,6 +828,14 @@ function scenarioMap(inputs) {
     const gx = 8 + i * (384 - 16) / 4, gy = 8 + i * (288 - 16) / 4;
     grid.push(`<path d="M${gx} 8 V280" stroke="#EEF1F7" stroke-width="1"/><path d="M8 ${gy} H384" stroke="#EEF1F7" stroke-width="1"/>`);
   }
+  // recognizable places so the fires read in context of the schools
+  const regionLabs = [["PUNJAB", 74.9, 31.0], ["HARYANA", 76.1, 29.2], ["DELHI · NCR", 77.15, 28.32]]
+    .map(([t, lon, lat]) =>
+      `<text x="${x(lon).toFixed(0)}" y="${y(lat).toFixed(0)}" text-anchor="middle" font-size="8" letter-spacing="1.6" fill="#aab0bc" font-weight="700" font-family="Inter,system-ui">${t}</text>`).join("");
+  const meanLat = (minLat + maxLat) / 2;
+  const pxPerDegLon = (384 - 16) / (maxLon - minLon || 1);
+  const kmPerDegLon = 111.32 * Math.cos(meanLat * Math.PI / 180);
+  const scalePx = Math.max(22, Math.min(88, 100 * (pxPerDegLon / kmPerDegLon))).toFixed(0);
   // cluster fires on a coarse grid so a live day with 80+ detections stays readable
   const CELL = 26, bins = {};
   fires.forEach(f => {
@@ -858,15 +869,24 @@ function scenarioMap(inputs) {
   return `
   <svg viewBox="0 0 392 296" role="img" aria-label="Scenario map: NCR schools and stations, Punjab-Haryana stubble fires, wind from ${d} degrees">
     ${grid.join("")}
+    ${regionLabs}
     ${fireDots}${fireLabs}
     <g transform="translate(${wcx},${wcy}) rotate(${rot})">
       <path d="M-26 0 L18 0" stroke="#5f8000" stroke-width="2.5" stroke-linecap="round"/>
       <path d="M12 -5 L20 0 L12 5" fill="none" stroke="#5f8000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
     <text x="${wcx - 34}" y="${wcy - 12}" font-size="8" fill="#5f8000" font-weight="700" font-family="Inter,system-ui">wind ${d}°</text>
-    <text x="12" y="24" font-size="10" fill="#9aa3b5" font-weight="700" font-family="Inter,system-ui">NW stubble corridor — Haryana · Punjab</text>
     ${stationDots}
     ${schoolPins}
+    <g transform="translate(376,22)" opacity=".72">
+      <path d="M0 -9 L3.2 2 L0 0 L-3.2 2 Z" fill="#8f96a3"/>
+      <text x="0" y="14" text-anchor="middle" font-size="7.5" fill="#8f96a3" font-weight="700" font-family="Inter,system-ui">N</text>
+    </g>
+    <g transform="translate(${(384 - 16 - Number(scalePx)).toFixed(0)},280)">
+      <path d="M0 0 H${scalePx}" stroke="#8f96a3" stroke-width="1.6"/>
+      <path d="M0 -3.5 V3.5 M${scalePx} -3.5 V3.5" stroke="#8f96a3" stroke-width="1.6"/>
+      <text x="${(Number(scalePx) / 2).toFixed(0)}" y="-5" text-anchor="middle" font-size="7.5" fill="#8f96a3" font-weight="600" font-family="Inter,system-ui">100 km</text>
+    </g>
     <text x="12" y="286" font-size="8.5" fill="#6b7167" font-weight="600" font-family="Inter,system-ui">${fires.length} fires · ${activeFires} active · ${clusters.length} shown</text>
   </svg>`;
 }
@@ -933,7 +953,7 @@ function renderDashboard() {
   const cnt = {0:0,1:0,2:0};
   dec.forEach(d => { cnt[d.level] = (cnt[d.level] || 0) + 1; });
   const maxAqi = dec.length ? dec.reduce((m, d) => (d.aqiEffective > m.aqiEffective ? d : m), dec[0]) : null;
-  $("dashSub").textContent = `${ins.date} · ${ins.stations.length} stations · ${ins.fires.length} fires · wind ${ins.wind.directionDeg}° / ${ins.wind.speedKmh} km/h (${compass(ins.wind.directionDeg)})`;
+  $("dashSub").textContent = `Decision morning ${ins.date} · ${ins.stations.length} stations · ${ins.fires.length} fires · wind ${ins.wind.directionDeg}° / ${ins.wind.speedKmh} km/h (${compass(ins.wind.directionDeg)})`;
 
   // provenance: label every input with where it came from and when it was observed
   const src = ins.source || {};
@@ -954,10 +974,10 @@ function renderDashboard() {
   $("scenSub").title = fetched ? `live inputs last fetched ${new Date(fetched).toUTCString()}` : provTxt;
 
   const kpi = [
-    {cls:"good", t:"Schools open", v: cnt[0] || 0, s:`of ${n} decided ${dec.length ? "· " + dec.length : ""}`.trim()},
+    {cls:"good", t:"Schools open", v: cnt[0] || 0, s:`of ${n} schools`},
     {cls:"amber", t:"Protected", v: cnt[1] || 0, s:"open with measures"},
     {cls:"red", t:"Closed", v: cnt[2] || 0, s:"classes online"},
-    {cls:"blue", t:"Highest AQI", v: maxAqi ? Math.round(maxAqi.aqiEffective) : "—", s: maxAqi ? `${maxAqi.bandLabel} · ${maxAqi.schoolId}` : "no decisions yet", color: maxAqi ? maxAqi.bandHex : undefined},
+    {cls:"blue", t:"Highest AQI", v: maxAqi ? Math.round(maxAqi.aqiEffective) : "—", s: maxAqi ? `${maxAqi.bandLabel} · ${maxAqi.schoolId}` : "no decisions yet", color: maxAqi ? bandInk(maxAqi.bandLabel, maxAqi.bandHex) : undefined},
   ];
   $("kpiRow").innerHTML = kpi.map(k =>
     `<div class="card kpi ${k.cls}">
@@ -982,7 +1002,7 @@ function renderDashboard() {
     return `<li style="box-shadow:inset 3px 0 0 ${d.bandHex}">
       <div style="min-width:0"><div class="nm">${esc(s.name)}</div><div class="ws">${esc(s.ward)} · ${d.bandLabel}</div></div>
       ${ringSvg(d.aqiEffective, d.bandHex, 42)}
-      <div class="aqi"><b style="color:${d.bandHex}">${Math.round(d.aqiEffective)}</b><small>AQI</small></div>
+      <div class="aqi"><b style="color:${bandInk(d.bandLabel, d.bandHex)}">${Math.round(d.aqiEffective)}</b><small>AQI</small></div>
       ${chip(d.level)}
     </li>`;
   }).join("")}</ul>` : `<div class="empty"><span class="ico">${SVG.smoke}</span>No schools loaded.</div>`;
@@ -1007,7 +1027,7 @@ function renderSchoolsTable() {
     const d = decisionFor(s.id);
     const hist = state.inputs && state.inputs.historyAqi ? (state.inputs.historyAqi[s.id] || []) : [];
     const sel = state.selected === s.id ? " sel" : "";
-    const aqiCell = d ? `<span class="td-num" style="color:${d.bandHex}">${Math.round(d.aqiEffective)}</span><span style="color:var(--faint);font-size:11px"> ${esc(d.bandLabel)}</span>` : '<span style="color:var(--faint)">—</span>';
+    const aqiCell = d ? `<span class="td-num" style="color:${bandInk(d.bandLabel, d.bandHex)}">${Math.round(d.aqiEffective)}</span><span style="color:var(--faint);font-size:11px"> ${esc(d.bandLabel)}</span>` : '<span style="color:var(--faint)">—</span>';
     return `<tr class="${sel}" data-id="${esc(s.id)}">
       <td><div class="sch-name">${esc(s.name)}</div><div class="sch-meta">${esc(s.ward)} · opens ${esc(s.opensAt)}</div></td>
       <td>${d ? chip(d.level) : '<span class="chip grey">no decision</span>'}</td>
@@ -1289,7 +1309,7 @@ $("refreshFires").onclick = async () => {
 /* ---------- header chips ---------- */
 function renderChips() {
   const ins = state.inputs, h = state.health;
-  $("chipDateTxt").textContent = ins ? ins.date : "—";
+  $("chipDateTxt").textContent = ins ? `morning ${ins.date}` : "—";
   $("chipWindTxt").textContent = ins ? `${Math.round(ins.wind.directionDeg)}° ${ins.wind.speedKmh} km/h · ${compass(ins.wind.directionDeg)}` : "—";
   const src = (ins && ins.source) || {};
   const sfields = (h && h.sources) || {};
@@ -1305,7 +1325,7 @@ function renderChips() {
   if (el) {
     if (fetched) {
       el.style.display = "";
-      $("chipAsOfTxt").textContent = `as of ${fmtIst(fetched)}`;
+      $("chipAsOfTxt").textContent = `live as of ${fmtIst(fetched)}`;
       $("chipAsOfDot").style.background = anyFallback ? "var(--amber)" : "var(--good)";
       el.title = `live inputs fetched ${new Date(fetched).toUTCString()} (${timeAgo(fetched)})`;
     } else {
