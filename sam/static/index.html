@@ -242,12 +242,16 @@
 
   /* agent */
   .agent-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
-  .chat{display:flex;flex-direction:column;height:min(52vh,440px)}
+  .chat{display:flex;flex-direction:column;height:clamp(400px,68vh,440px)}
+  .prompts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:2px 2px 10px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .prompts .pl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+  .prompts button{background:none;border:1px solid var(--border2);border-radius:999px;padding:4px 10px;font-size:11.5px;color:var(--muted);font-weight:600;cursor:pointer}
+  .prompts button:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
   #startBlock{flex:1;display:none;min-height:0}
   .empty-chat{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
   .empty-chat .t{font-size:13.5px;font-weight:650;color:var(--text);margin:0}
   .empty-chat .s{font-size:12px;color:var(--faint);margin:0}
-  .chatlog{flex:1;overflow-y:auto;padding:2px 2px 8px;display:flex;flex-direction:column;gap:12px}
+  .chatlog{flex:1;overflow-y:auto;padding:10px 2px 8px;display:flex;flex-direction:column;gap:12px;min-height:0}
   .bub{max-width:84%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
   .bub .meta{display:block;margin-top:6px;font-size:10.5px;color:var(--faint)}
   .bub.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
@@ -266,10 +270,6 @@
   .quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
   .quick button{background:none;border:1px solid var(--border2);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--muted);font-weight:600}
   .quick button:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
-  .prompts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:2px 0 10px;border-bottom:1px solid var(--line)}
-  .prompts .pl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
-  .prompts button{background:none;border:1px solid var(--border2);border-radius:999px;padding:4px 10px;font-size:11.5px;color:var(--muted);font-weight:600;cursor:pointer}
-  .prompts button:hover{color:var(--primary);border-color:var(--primary);background:var(--primary-soft)}
   .consent-card{margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12.5px;color:var(--muted)}
   .consent-card b{color:var(--text)}
 
@@ -649,8 +649,8 @@
         </div>
         <div class="agent-grid">
           <div class="card chat">
+            <div class="prompts" id="prompts"></div>
             <div class="chatlog" id="chatlog" role="log" aria-live="polite" aria-label="Conversation with the 6 AM agent">
-              <div class="prompts" id="prompts"></div>
               <div id="startBlock"><div class="empty-chat"><p class="t">Ask about a school's air-quality decision</p><p class="s">Choose a prompt above or type a question below.</p></div></div>
             </div>
             <div class="composer">
