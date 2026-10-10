@@ -237,7 +237,7 @@
 
   /* agent */
   .agent-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
-  .chat{display:flex;flex-direction:column;height:min(62vh,520px)}
+  .chat{display:flex;flex-direction:column;height:min(54vh,470px)}
   .chatlog{flex:1;overflow-y:auto;padding:2px 2px 8px;display:flex;flex-direction:column;gap:12px}
   .bub{max-width:84%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
   .bub .meta{display:block;margin-top:6px;font-size:10.5px;color:var(--faint)}
@@ -316,6 +316,8 @@
   .det-len{font-weight:400;color:var(--faint)}
   .det pre{margin:6px 0 0;padding:8px 10px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;
     font-size:10.5px;color:var(--muted);overflow-x:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Consolas,monospace}
+  .msg-prev{font-size:12.5px;color:var(--muted);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .msg-full{font-size:12.5px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
 
   @media(max-width:980px){
     .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .22s ease;box-shadow:var(--shadow)}
@@ -418,7 +420,7 @@
   .role-opt b{font-size:12px}.role-opt small{font-size:10.5px;color:#6f756b}.r-ico.p,.r-ico.pc,.r-ico.o{background:var(--brand-soft);color:#57691a}
   .field label{font-size:9px;letter-spacing:1px;color:#7e8479}.login-hint{font-size:10px;color:#767c71;line-height:1.65}
   @media(max-width:980px){.sidebar{background:rgba(248,249,245,.94);box-shadow:0 20px 70px rgba(28,33,25,.18)}.dashgrid,.agent-grid,.detail-grid{grid-template-columns:1fr}.dashgrid>.stack:first-child>.card{min-height:0}.table-wrap table th:nth-child(7),.table-wrap table td:nth-child(7),.table-wrap table th:nth-child(8),.table-wrap table td:nth-child(8),.table-wrap table th:nth-child(9),.table-wrap table td:nth-child(9){display:none}}
-  @media(max-width:620px){.content{padding:18px 14px 34px}.topbar{height:68px;padding:0 14px}.topbar h1{font-size:16px}.chips{gap:5px}.chips .chipline.hide-sm{display:none}.brand{display:flex;padding:19px 20px 14px}.kpi-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi{min-height:98px;padding:13px}.kpi .v{font-size:26px}.kpi .s{font-size:9px}.sec-head{align-items:flex-start}.sec-head .hint{width:100%;order:3}.sec-head .grow{display:none}.card{padding:16px;border-radius:19px}.map-wrap{padding:4px}.map-legend{gap:9px}.hero-band{align-items:flex-start}.kv-grid{grid-template-columns:repeat(2,1fr)}.composer{flex-wrap:wrap}.composer select{max-width:none;width:100%}.composer input{min-width:calc(100% - 66px)}.table-wrap table th:nth-child(4),.table-wrap table td:nth-child(4),.table-wrap table th:nth-child(6),.table-wrap table td:nth-child(6){display:none}.chat{height:460px}.consent-card,.feed .body .ref,.bub .meta{overflow-wrap:anywhere}}
+  @media(max-width:620px){.content{padding:18px 14px 34px}.topbar{height:68px;padding:0 14px}.topbar h1{font-size:16px}.chips{gap:5px}.chips .chipline.hide-sm{display:none}.brand{display:flex;padding:19px 20px 14px}.kpi-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi{min-height:98px;padding:13px}.kpi .v{font-size:26px}.kpi .s{font-size:9px}.sec-head{align-items:flex-start}.sec-head .hint{width:100%;order:3}.sec-head .grow{display:none}.card{padding:16px;border-radius:19px}.map-wrap{padding:4px}.map-legend{gap:9px}.hero-band{align-items:flex-start}.kv-grid{grid-template-columns:repeat(2,1fr)}.composer{flex-wrap:wrap}.composer select{max-width:none;width:100%}.composer input{min-width:calc(100% - 66px)}.table-wrap table th:nth-child(4),.table-wrap table td:nth-child(4),.table-wrap table th:nth-child(6),.table-wrap table td:nth-child(6){display:none}.chat{height:430px}.consent-card,.feed .body .ref,.bub .meta{overflow-wrap:anywhere}}
 </style>
 </head>
 <body>
@@ -1192,7 +1194,8 @@ function renderChatStart() {
   sb.innerHTML = `<div class="bub ai" style="max-width:100%">
       <b>Good morning. I'm the 6 AM decision agent.</b> I read the scenario and explain it like the officer's desk — what's
       decided, why, and which schools are affected. I never guess, and I never send unless you say <b>send it</b> and
-      confirm in the same turn.<span class="meta">pick a school in the corner, then tap a prompt above or type your own.</span></div>`;
+      confirm in the same turn.<span class="meta">pick a school in the corner, then tap a prompt above or type your own.</span></div>
+    <div class="bub sys" style="max-width:100%">No conversation yet — choose a school, then ask anything below.</div>`;
 }
 function renderAgent() {
   seedAgentUI();
@@ -1368,7 +1371,8 @@ function outboxCard(m) {
       ${sim ? `<span class="consent-tag no-send">SIMULATED DELIVERY</span>` : `<span class="consent-tag sent-ok">DELIVERED</span>`}
       <span style="margin-left:auto;color:var(--faint);font-size:11px"><b style="color:var(--muted)">${esc(when)}</b> UTC</span>
     </div>
-    <div style="margin-top:6px;font-size:12.5px">${esc(m.message)}</div>
+    <div class="msg-prev" title="${esc(m.message)}">${esc(m.message)}</div>
+    <details class="det"><summary>full alert <span class="det-len">${m.message.length} chars</span></summary><div class="msg-full">${esc(m.message)}</div></details>
     <div style="color:var(--faint);font-size:11.5px;margin-top:6px">via <b>${esc(channel)}</b> → receipt <b>${esc(receipt)}</b> · by ${esc(m.issuedBy || "—")}</div>
     ${cert ? `<details class="det"><summary>certificate <span class="det-len">${cert.length} bytes</span></summary><pre>${esc(cert)}</pre></details>`
       : `<div style="margin-top:6px;color:var(--faint);font-size:11px">no certificate recorded</div>`}
