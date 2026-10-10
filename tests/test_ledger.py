@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import tempfile
 
-from firstlight.ledger import Ledger, LEDGER_TABLE
+from firstlight.ledger import LEDGER_TABLE, Ledger
 
 
 class TestLedger(unittest.TestCase):

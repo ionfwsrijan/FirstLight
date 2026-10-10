@@ -4,8 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from firstlight.engine.trend import analyze
 from firstlight.domain import Trend
+from firstlight.engine.trend import analyze
 
 
 class TestTrend(unittest.TestCase):

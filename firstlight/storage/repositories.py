@@ -8,7 +8,7 @@ engine, the pipeline, or the API logic.
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..domain import Decision, School, Station, StubbleFire
 from .db import json_of, loads
@@ -114,7 +114,7 @@ class DecisionsRepo:
                 json_of([r.to_dict() for r in decision.reasons]),
                 json_of(list(decision.actions)),
                 json_of(decision.evidence),
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
             ),
         )
 
@@ -159,13 +159,13 @@ class AlertsRepo:
                 level_name,
                 message,
                 issued_by,
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
                 cert,
                 channel,
                 receipt,
             ),
         )
-        return cur.lastrowid
+        return int(cur.lastrowid or 0)
 
     def recent(self, limit: int = 25) -> list[dict]:
         rows = self.conn.execute("SELECT * FROM alerts ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
@@ -215,14 +215,14 @@ class TranscriptRepo:
     def append(self, caller: str, school_id: str, turn: int, speaker: str, text: str, intent: str) -> int:
         cur = self.conn.execute(
             "INSERT INTO transcript (caller, school_id, turn, speaker, intent, text, created_utc) VALUES (?,?,?,?,?,?,?)",
-            (caller, school_id, turn, speaker, intent, text, datetime.now(timezone.utc).isoformat()),
+            (caller, school_id, turn, speaker, intent, text, datetime.now(UTC).isoformat()),
         )
         self.conn.execute(
             "DELETE FROM transcript WHERE caller=? AND school_id=? AND id NOT IN "
             "(SELECT id FROM transcript WHERE caller=? AND school_id=? ORDER BY id DESC LIMIT ?)",
             (caller, school_id, caller, school_id, self.MAX_TURNS),
         )
-        return int(cur.lastrowid)
+        return int(cur.lastrowid or 0)
 
     def recent(self, caller: str, school_id: str = "", limit: int = 60) -> list[dict]:
         if school_id:

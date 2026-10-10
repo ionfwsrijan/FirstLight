@@ -2,19 +2,24 @@
 
 **The 6 AM on-call agent for the air a child breathes — it answers before a single bell rings, and it ships the receipts.**
 
-> **Track:** Air · **Path:** Build It + Ship It mirror.
-> This repository is the **First Commit** entry: a deterministic, fully-tested
-> school-air agent that runs today with **no AWS account, no credit card, no
-> bill** (the Build It path: FastAPI + SQLite, with AWS **Cedar** open-source
-> authorization in the loop). A deployable **Ship It twin** lives in
-> [`sam/`](sam/template.yaml) — Lambda + DynamoDB + Cognito running the *same*
-> engine — ready the moment the account verification clears.
+> **Track:** Air · **Path:** Build It + Ship It (both live).
+> **Ship It is deployed:** the console runs on AWS Lambda + API Gateway +
+> DynamoDB + Cognito — **[open the live console](https://8s2dtqrqzi.execute-api.ap-south-2.amazonaws.com/dev/)**. Every verdict you see is the
+> same deterministic engine as the local build, packaged into the Lambda layer
+> by [`sam/build_layer.py`](sam/build_layer.py) (and asserted identical by
+> [`tests/test_sam_mirror.py`](tests/test_sam_mirror.py)). The **Build It** path
+> (FastAPI + SQLite) is the zero-dependency replay for reviewers: no account, no
+> network, runnable in two minutes. AWS **Cedar** open-source policies encode the
+> role matrix in both.
 
-[![Python](https://img.shields.io/badge/python-3.13-3776ab)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-116%20passed-2eb872)](scripts/gate.ps1)
+[![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2eb872)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
-**Console:** `py -m firstlight.cli serve` → <http://127.0.0.1:8000> · **Demo film:** [docs/demo-script.md](docs/demo-script.md) · **Architecture:** [docs/architecture.md](docs/architecture.md) (Mermaid) · **AuthZ engine:** [AWS Cedar policies](firstlight/auth/cedar/policies.cedar) · **Try it locally:** `py -m firstlight.cli seed && py -m firstlight.cli serve`
+**Live console:** <https://8s2dtqrqzi.execute-api.ap-south-2.amazonaws.com/dev/> · **Local replay:** `py -m firstlight.cli seed && py -m firstlight.cli serve` → <http://127.0.0.1:8000>
+
+**Docs:** [Architecture (Mermaid)](docs/architecture.md) · [Demo film](docs/demo-script.md) · [What's real vs simulated](docs/LEARNINGS.md) · [Submission map](docs/submission.md) · [Cedar policies](firstlight/auth/cedar/policies.cedar) · [Ship It runbook](sam/README.md)
 
 Every winter, NCR children lose school days to closures nobody decided — a
 cloud of stubble smoke arrives overnight, a principal wakes up confused, and
@@ -96,7 +101,7 @@ never manufactures a number.
 | **AWS Lambda** | morning / status / talk functions in the twin | `sam/handlers/` |
 | **AWS Serverless Application Model** | the whole Ship It definition | [`sam/template.yaml`](sam/template.yaml) |
 | **FastAPI + SQLite (Build It)** | the demoable local product, zero cloud | `firstlight/api/`, `firstlight/storage/` |
-| **SNS / webhook / SMTP** | alert delivery channels (hook is used by the twin) | `firstlight/notifier/`, `sam/handlers/shared.py` |
+| **SMTP / webhook / console** | alert delivery channels (the twin wires the webhook via `ALERT_HOOK_URL`) | `firstlight/notifier/`, `sam/handlers/shared.py` |
 
 ## Safety model (the part that matters)
 
@@ -150,7 +155,7 @@ Details: [`tests/`](tests/) and [`docs/architecture.md`](docs/architecture.md).
 ```powershell
 git clone https://github.com/ionfwsrijan/FirstLight && cd firstlight
 py -m pip install -e ".[test]"     # fastapi, uvicorn, pydantic, httpx
-py -m firstlight.cli gate          # 116 tests
+py -m firstlight.cli gate          # 121 tests
 py -m firstlight.cli seed          # build the local sqlite (or let the server auto-seed)
 py -m firstlight.cli serve         # http://127.0.0.1:8000
 ```
@@ -162,26 +167,29 @@ Sign in with a demo account (seeded idempotently on every boot):
 Needs Python 3.11+. No Docker, no AWS credentials, no npm. `scripts/run.ps1`
 and `scripts/gate.ps1` wrap the two common commands.
 
-### On AWS (the *Ship It* path)
+### On AWS (the *Ship It* path — deployed)
 
-```powershell
-.\sam\build-layer.ps1                      # package the pure-Python core into a Lambda layer
-sam validate -t sam\template.yaml          # valid today, before the account even clears
-sam build --template sam\template.yaml
-sam deploy --guided --capabilities CAPABILITY_IAM
+```bash
+python sam/build_layer.py                  # package the pure-Python core into a Lambda layer (cross-platform)
+sam validate -t sam/template.yaml --lint
+sam build --template sam/template.yaml
+sam deploy --stack-name firstlight-shipit --capabilities CAPABILITY_IAM \
+  --no-confirm-changeset --resolve-s3 --parameter-overrides Env=dev --region ap-south-2
 ```
 
 Then the same flow against the deployed URL:
 
 ```text
-POST <ApiUrl>/morning            → 7 schools, identical verdicts to local
-GET  <ApiUrl>/status?schoolId=s-avini
+GET  <ApiUrl>/                   → the live console
+POST <ApiUrl>/login  {username,password}
+POST <ApiUrl>/morning            → 7 schools, byte-identical verdicts to local
+GET  <ApiUrl>/decisions/s-avini
 POST <ApiUrl>/talk  {"text":"yes, send it","school_id":"s-avini"}
 ```
 
-New AWS accounts sit under a verification hold for a while — that is exactly
-why this project's primary path is Build It: nothing in the demo makes a
-network call. Full runbook: [`sam/README.md`](sam/README.md).
+The live deployment is on the AWS free tier shape (Lambda + DynamoDB on-demand
++ Cognito). Full runbook, least-privilege IAM notes and the hosted-UI caveat:
+[`sam/README.md`](sam/README.md).
 
 ## Repository map
 
@@ -205,7 +213,7 @@ firstlight/
   cli/                 serve · seed · gate
 web/index.html         the console (login, source chip, provenance labels, outbox, transcript — no build step)
 sam/                   Ship It twin: template.yaml, Lambda handlers, DynamoDB mirror, core layer
-tests/                 116 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+tests/                 121 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
                        auth + Cedar + login, intents + consent, certificates, pipeline, API roles,
                        FIRMS parsing + fallback, outbox + transcript, SAM mirror
 scripts/               run.ps1 · gate.ps1
@@ -245,9 +253,22 @@ Known gaps, on purpose for a hackathon: a dev-only default secret instead of a
 real secret manager (inject it in prod), and the demo's stations/wind/history
 stay frozen (only the fires are live, via NASA FIRMS with a visible fallback —
 the ingest interface is the same dict shape, so a full feed is a swap of one
-fetcher). The Ship It twin is un-deployed because the AWS account is under
-verification — hence Build It as the demoable path, with the twin
-`sam validate`-clean.
+fetcher). The full "real vs simulated" table, with CPCB/CAQM citations, is in
+[`docs/LEARNINGS.md`](docs/LEARNINGS.md). The Ship It twin **is deployed**
+(live console above) and is `sam validate`-clean.
+
+## Quality gates
+
+```bash
+ruff check .                         # lint
+mypy firstlight                      # types (clean)
+pytest --cov=firstlight              # tests + coverage floor
+python sam/build_layer.py --check    # console single-source (no drift)
+cfn-lint sam/template.yaml && sam validate --template sam/template.yaml --lint
+```
+
+All of these run in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on
+every push and pull request.
 
 ## Charts
 

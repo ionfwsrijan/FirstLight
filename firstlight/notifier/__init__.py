@@ -2,12 +2,14 @@
 
 The pipeline emits logical alerts; a notifier turns them into real messages.
 Build It default is the console notifier (no network). SMTP and generic
-webhook notifiers are provided for a real deployment and used by the SAM
-template's SNS/SES path. Failures are logged and never crash the morning.
+webhook notifiers are provided for a real deployment; the SAM twin wires the
+webhook channel via ALERT_HOOK_URL. Failures are logged and never crash the
+morning.
 """
 
 from __future__ import annotations
 
+import json
 import smtplib
 import urllib.request
 from abc import ABC, abstractmethod
@@ -57,7 +59,7 @@ class WebhookNotifier(Notifier):
     def notify(self, *, school_id: str, level: str, message: str) -> str:
         if not self.url:
             return f"webhook-unconfigured-{school_id}"
-        body = ('{"school":"%s","level":"%s","message":"%s"}' % (school_id, level, message)).encode()
+        body = json.dumps({"school": school_id, "level": level, "message": message}).encode()
         req = urllib.request.Request(self.url, data=body, headers={"Content-Type": "application/json"}, method="POST")
         try:
             with urllib.request.urlopen(req, timeout=10):

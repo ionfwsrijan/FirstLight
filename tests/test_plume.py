@@ -4,8 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from firstlight.engine.plume import score_fires, upwind_fire_ids
 from firstlight.domain import School, StubbleFire, Wind
+from firstlight.engine.plume import score_fires, upwind_fire_ids
 
 
 def _fire(fid: str, lat: float, lon: float, frp: float = 20.0, status: str = "active") -> StubbleFire:

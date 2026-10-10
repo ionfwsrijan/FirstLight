@@ -7,6 +7,7 @@ rules can decide whether the movement itself is a health signal.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from statistics import median
 
 from ..domain import Trend
@@ -16,7 +17,7 @@ RISE_FRAC = 0.15  # 15% above baseline = RISING
 FALL_FRAC = 0.15  # 15% below baseline = IMPROVING
 
 
-def analyze(today_aqi: float, prior: list[float]) -> dict:
+def analyze(today_aqi: float, prior: Sequence[float]) -> dict:
     clean = [float(x) for x in prior if x is not None and x >= 0]
     baseline = median(clean[-WINDOW:]) if clean else today_aqi
     delta = today_aqi - baseline

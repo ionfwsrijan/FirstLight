@@ -1,3 +1,3 @@
-from .store import Ledger, LEDGER_TABLE
+from .store import LEDGER_TABLE, Ledger
 
 __all__ = ["Ledger", "LEDGER_TABLE"]

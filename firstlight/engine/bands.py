@@ -2,6 +2,14 @@
 
 Pure, deterministic lookups. Same input -> same output, always.
 These tables are the rule engine; the AI only narrates what is here.
+
+Sources (also cited in docs/LEARNINGS.md):
+  - CPCB National Air Quality Index, "AQI breakpoints" (Good 0-50, Satisfactory
+    51-100, Moderate 101-200, Poor 201-300, Very Poor 301-400, Severe 401-500):
+    Central Pollution Control Board, "National Air Quality Index" (Oct 2014).
+  - GRAP stage triggers for Delhi-NCR (I at 201, II at 301, III at 401,
+    IV at 450): Commission for Air Quality Management (CAQM) Graded Response
+    Action Plan. Tests in tests/test_bands.py pin these exact values.
 """
 
 from __future__ import annotations

@@ -54,6 +54,7 @@ def handler(event: dict, _context) -> dict:
 
     client = boto3.client("cognito-idp", region_name=os.environ["AWS_REGION"])
     token = None
+    uname_used = username
     attempts = [username] + ([_roles_for(username)] if _roles_for(username) else [])
     for uname in attempts:
         try:
@@ -65,6 +66,7 @@ def handler(event: dict, _context) -> dict:
             )
             token = (result.get("AuthenticationResult") or {}).get("IdToken", "")
             if token:
+                uname_used = uname
                 break
         except Exception as exc:  # boto3 exceptions vary by SDK version
             code = getattr(exc, "response", {}).get("Error", {}).get("Code", "")
@@ -86,6 +88,6 @@ def handler(event: dict, _context) -> dict:
 
     return respond(
         200,
-        {"token": token, "role": _role(user),
-         "user": user.get("cognito:username", username)},
+        {"token": token, "role": _role(user), "user": uname_used,
+         "sub": uname_used, "displayName": user.get("email") or uname_used},
     )

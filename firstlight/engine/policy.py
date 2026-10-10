@@ -9,12 +9,18 @@ Thresholds intentionally mirror published health guidance:
   - AQI >= 301 (Very Poor) + active plume -> CLOSED
   - AQI >= 201 (Poor)    -> PROTECTED
   - Plume + rising trend on a sensitive school -> PROTECTED at lower AQI
+
+Sources (pinned in docs/LEARNINGS.md):
+  - CPCB National Air Quality Index breakpoints (Poor >= 201, Very Poor >= 301,
+    Severe >= 401): CPCB, "National Air Quality Index" (2014), aqi.pdf.
+  - CAQM GRAP stages (I >= 201, II >= 301, III >= 401, IV >= 450): Commission
+    for Air Quality Management in NCR, Graded Response Action Plan.
 """
 
 from __future__ import annotations
 
 from ..domain import Level
-from ..dsl import Rule, ctx
+from ..dsl import Rule
 
 
 def catalog() -> tuple[Rule, ...]:

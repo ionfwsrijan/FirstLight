@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint · Types · Tests (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff (lint)
+        run: ruff check .
+
+      - name: mypy (types)
+        run: mypy firstlight
+
+      - name: Build Lambda layer + console
+        run: python sam/build_layer.py
+
+      - name: Console single-source check
+        run: python sam/build_layer.py --check
+
+      - name: Tests + coverage floor
+        run: pytest --cov=firstlight --cov-report=term-missing
+
+  infra:
+    name: Template (cfn-lint · sam validate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install cfn-lint aws-sam-cli
+
+      - name: Build layer (needed by sam validate)
+        run: python sam/build_layer.py
+
+      - name: cfn-lint
+        run: cfn-lint sam/template.yaml
+
+      - name: sam validate
+        run: sam validate --template sam/template.yaml --lint

@@ -51,7 +51,8 @@ from ..engine import decide_school
 from ..ledger import Ledger
 from ..notifier import build as build_notifier
 from ..pipeline import effective_inputs, run_morning
-from ..pipeline.sources import refresh as refresh_fire_source, read_status
+from ..pipeline.sources import read_status
+from ..pipeline.sources import refresh as refresh_fire_source
 from ..storage import AlertsRepo, DecisionsRepo, SchoolsRepo, TranscriptRepo, UsersRepo, connect
 
 log = logging.getLogger("firstlight.api")

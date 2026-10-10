@@ -45,8 +45,8 @@ class TestShipItMirror(unittest.TestCase):
         os.environ["RULESET_VERSION"] = "firstlight-rules-v2@2026-10"
         os.environ["ALERT_HOOK_URL"] = ""
         sys.modules["boto3"] = _FakeBoto3()
-        from sam.handlers import morning as m  # noqa: PLC0415
         from sam.handlers import meta as mm  # noqa: PLC0415
+        from sam.handlers import morning as m  # noqa: PLC0415
         from sam.handlers import talk as t  # noqa: PLC0415
 
         self.morning = m

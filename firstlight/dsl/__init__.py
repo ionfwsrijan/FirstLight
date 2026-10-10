@@ -11,10 +11,10 @@ reproduce any verdict by hand. No model, no hidden weights.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
-from ..domain import Decision, Level, RuleHit
+from ..domain import Level, RuleHit
 
 Predicate = Callable[[dict], bool]
 

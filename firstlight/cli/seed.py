@@ -20,12 +20,12 @@ def seed() -> dict:
         FiresRepo(db),
         HistoryRepo(db),
     )
-    for s in inputs.stations:
-        stations.upsert(s)
-    for s in inputs.schools:
-        schools_repo.upsert(s)
-    for f in inputs.fires:
-        fires_repo.upsert(f)
+    for st in inputs.stations:
+        stations.upsert(st)
+    for sch in inputs.schools:
+        schools_repo.upsert(sch)
+    for fire in inputs.fires:
+        fires_repo.upsert(fire)
     for sid, aqis in inputs.history_aqi.items():
         # prior mornings are the trend baseline; today's is set by run_morning
         for idx, aqi in enumerate(aqis, start=1):

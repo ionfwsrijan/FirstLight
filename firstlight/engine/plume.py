@@ -15,7 +15,13 @@ from __future__ import annotations
 from math import exp, log
 
 from ..domain import School, StubbleFire, Wind
-from .geometry import angular_diff_deg, haversine_km, initial_bearing_deg, is_fire_upwind, wind_toward_deg
+from .geometry import (
+    angular_diff_deg,
+    haversine_km,
+    initial_bearing_deg,
+    is_fire_upwind,
+    wind_toward_deg,
+)
 
 DECAY_DISTANCE_KM = 250.0  # plume concentration drops 1/e per this distance
 PLUME_CAP = 3.0  # normalized cap so a heavy night reads as 3.0

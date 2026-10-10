@@ -6,13 +6,15 @@ pipeline, the API, and the narrator all call.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from ..domain import Decision, Level, MorningInputs, RuleHit, School
+from ..dsl import ctx, evaluate
 from . import bands
 from .interpolation import interpolate_aqi
 from .plume import score_fires
 from .policy import catalog
 from .trend import analyze
-from ..dsl import ctx, evaluate
 
 SENSITIVE_BONUS = 15.0
 
@@ -90,7 +92,7 @@ def decide_school(
     )
 
 
-def _rule_fired(rule_id: str, hits: tuple[RuleHit, ...]) -> bool:
+def _rule_fired(rule_id: str, hits: Sequence[RuleHit]) -> bool:
     return any(h.rule_id == rule_id and h.applied for h in hits)
 
 

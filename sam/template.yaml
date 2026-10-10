@@ -1,10 +1,15 @@
 # FirstLight — Ship It (AWS SAM) mirror of the local Build It app.
 #
-# The local product (FastAPI + SQLite) is the primary, demoable build. This
-# SAM application is the deployable twin: the exact same decision engine and
+# The local product (FastAPI + SQLite) is the demoable build. This SAM
+# application is the deployable twin: the exact same decision engine and
 # rule DSL run inside Lambda, with the same data written to DynamoDB and the
-# same capability model enforced by AWS-native auth (Cognito + IAM policy).
+# same capability model enforced by AWS-native auth (Cognito + scoped IAM).
 # Authorization logic mirrors firstlight/auth/cedar/policies.cedar.
+#
+# Least privilege: every function gets an inline policy scoped to the single
+# table (read vs read/write) or the single Cognito pool action it needs — no
+# broad AWS-managed policies, so the IAM grants match the app's one-directional
+# role model instead of contradicting it.
 
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
@@ -29,12 +34,14 @@ Globals:
     Timeout: 30
     MemorySize: 256
     Architectures: [arm64]
+    Tracing: Active
     Environment:
       Variables:
         TABLE_NAME: !Ref DecisionsTable
         ENV: !Ref Env
         RULESET_VERSION: firstlight-rules-v2@2026-10
         ALERT_HOOK_URL: !Ref AlertHookUrl
+        LOG_LEVEL: INFO
     Layers:
       - !Ref FirstLightCoreLayer
 
@@ -43,6 +50,7 @@ Resources:
   DecisionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
+      TableName: !Sub firstlight-${Env}-data
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: pk
@@ -56,6 +64,10 @@ Resources:
           KeyType: RANGE
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   # ---- Auth: Cognito mirrors the parent/principal/officer roles ----
   FirstLightUserPool:
@@ -63,6 +75,13 @@ Resources:
     Properties:
       UserPoolName: !Sub firstlight-${Env}-pool
       AutoVerifiedAttributes: [email]
+      # Admin-only provisioning: no self-signup; roles are assigned by ops.
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
       Policies:
         PasswordPolicy:
           MinimumLength: 10
@@ -75,23 +94,52 @@ Resources:
       ClientName: firstlight-console
       GenerateSecret: false
       ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH, ALLOW_ADMIN_USER_PASSWORD_AUTH]
+      # Short-lived console sessions; the gateway authorizer trusts this id token.
+      IdTokenValidity: 60
+      AccessTokenValidity: 60
+      TokenValidityUnits:
+        IdToken: minutes
+        AccessToken: minutes
 
   # ---- The core decision layer (pure Python, shared with local build) ----
   FirstLightCoreLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: firstlight-core
-      Description: firstlight package (engine, dsl, ledger, agent). Built by build-layer.ps1.
+      LayerName: !Sub firstlight-core-${Env}
+      Description: firstlight package (engine, dsl, ledger, agent). Built by build_layer.py.
       ContentUri: build-layer
       CompatibleRuntimes: [python3.12]
 
-  # ---- Lambdas (harmless mirror of the local API) ----
+  # ---- Scoped IAM policy documents (least privilege, no managed policies) ----
+  # Read-only functions: status + the console data surface.
+  # Read/write functions: morning run + talk (writes decisions, alerts, ledger,
+  # transcript). Both are scoped to this one table and its indexes.
+  # Public login: only the two Cognito auth flows it calls, on this one pool.
+
+  # ---- Lambdas (mirror of the local API) ----
   MorningHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: handlers/
       Handler: morning.handler
-      Policies: [AmazonDynamoDBFullAccess]
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt DecisionsTable.Arn
+                - !Sub ${DecisionsTable.Arn}/index/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
       Events:
         Api:
           Type: Api
@@ -107,7 +155,22 @@ Resources:
     Properties:
       CodeUri: handlers/
       Handler: morning.status_handler
-      Policies: [AmazonDynamoDBReadOnlyAccess]
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt DecisionsTable.Arn
+                - !Sub ${DecisionsTable.Arn}/index/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
       Events:
         Api:
           Type: Api
@@ -123,7 +186,24 @@ Resources:
     Properties:
       CodeUri: handlers/
       Handler: talk.handler
-      Policies: [AmazonDynamoDBFullAccess]
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt DecisionsTable.Arn
+                - !Sub ${DecisionsTable.Arn}/index/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
       Events:
         Api:
           Type: Api
@@ -140,7 +220,24 @@ Resources:
     Properties:
       CodeUri: handlers/
       Handler: meta.handler
-      Policies: [AmazonDynamoDBReadOnlyAccess]
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt DecisionsTable.Arn
+                - !Sub ${DecisionsTable.Arn}/index/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - xray:PutTraceSegments
+                - xray:PutTelemetryRecords
+              Resource: "*"
       Events:
         Health:
           Type: Api
@@ -226,7 +323,13 @@ Resources:
       Handler: login.handler
       Timeout: 10
       MemorySize: 128
-      Policies: [AWSLambdaBasicExecutionRole, AmazonCognitoPowerUser]
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:InitiateAuth
+              Resource: !GetAtt FirstLightUserPool.Arn
       Environment:
         Variables:
           USER_POOL_ID: !Ref FirstLightUserPool
@@ -241,21 +344,11 @@ Resources:
             Auth:
               Authorizer: NONE
 
-  # ---- AuthN/AuthZ resource ----
-  FirstLightAuthorizer:
-    Type: AWS::ApiGateway::Authorizer
-    Properties:
-      Name: CognitoAuthorizer
-      Type: COGNITO_USER_POOLS
-      RestApiId: !Ref FirstLightApi
-      IdentitySource: method.request.header.Authorization
-      ProviderARNs:
-        - !GetAtt FirstLightUserPool.Arn
-
   FirstLightApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Env
+      TracingEnabled: true
       Auth:
         DefaultAuthorizer: FirstLightAuthorizer
         Authorizers:
@@ -272,3 +365,6 @@ Outputs:
   UserPoolClientId:
     Description: Cognito client id for the console.
     Value: !Ref FirstLightUserPoolClient
+  TableName:
+    Description: DynamoDB table backing the twin.
+    Value: !Ref DecisionsTable

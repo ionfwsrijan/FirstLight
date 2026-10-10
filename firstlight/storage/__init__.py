@@ -1,4 +1,4 @@
-from .db import connect, SCHEMA
+from .db import SCHEMA, connect
 from .repositories import (
     AlertsRepo,
     DecisionsRepo,

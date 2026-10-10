@@ -42,8 +42,6 @@ class TestTokens(unittest.TestCase):
         body = {"sub": "x", "role": "parent", "iat": 0, "exp": 10}
         import json
 
-        import base64
-
         from firstlight.auth.tokens import _b64
 
         payload = _b64(json.dumps(body, sort_keys=True).encode())

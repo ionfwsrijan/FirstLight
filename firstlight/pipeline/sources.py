@@ -16,7 +16,7 @@ import hashlib
 import io
 import urllib.request
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..domain import MorningInputs, StubbleFire
 from ..storage import MetaRepo
@@ -120,7 +120,7 @@ def read_status(conn) -> dict:
 
 def effective_inputs(conn) -> tuple[MorningInputs, dict]:
     """Frozen scenario, except fires swap to the last live refresh when present."""
-    payload = MetaRepo(conn).get(SOURCE_KEY)  # type: ignore[arg-type]
+    payload = MetaRepo(conn).get(SOURCE_KEY)
     if isinstance(payload, dict) and payload.get("fires"):
         fires = tuple(StubbleFire(**f) for f in payload["fires"])
         inputs = MorningInputs(DATE, STATIONS, SCHOOLS, fires, WIND, HISTORY)
@@ -133,7 +133,7 @@ def effective_inputs(conn) -> tuple[MorningInputs, dict]:
 
 def refresh(conn, timeout: float = 8.0) -> dict:
     """Explicit, officer-triggered fetch. Records provenance either way."""
-    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    now = datetime.now(UTC).isoformat(timespec="seconds")
     try:
         fires = fetch_live_fires(timeout)
         payload = {

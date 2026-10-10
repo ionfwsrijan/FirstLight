@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import tempfile
 import unittest
@@ -10,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import firstlight.pipeline.sources as sources  # noqa: E402
 from firstlight.pipeline import effective_inputs, morning_inputs  # noqa: E402
-from firstlight.storage import connect, MetaRepo  # noqa: E402
+from firstlight.storage import MetaRepo, connect  # noqa: E402
 
 VIIRS_CSV = """latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,confidence,version,bright_ti5,frp,daynight
 30.123,76.5,312.4,1.0,1.0,2026-10-07,0545,VNP02IMG,high,2.0,,12.3,N

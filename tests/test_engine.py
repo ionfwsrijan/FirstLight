@@ -5,9 +5,9 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from firstlight.domain import Level, MorningInputs, School, Station, StubbleFire, Wind
+from firstlight.dsl import ctx, evaluate
 from firstlight.engine import decide_school
 from firstlight.engine.policy import catalog
-from firstlight.dsl import evaluate, ctx
 
 
 def _inputs(

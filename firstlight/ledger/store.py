@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 LEDGER_TABLE = """
 CREATE TABLE IF NOT EXISTS ledger (
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS ledger (
 
 
 def _now_utc() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _hash(seq: int, ts: str, kind: str, ref: str, payload: str, prev_hash: str) -> str:
@@ -39,7 +40,7 @@ def _hash(seq: int, ts: str, kind: str, ref: str, payload: str, prev_hash: str) 
 
 @dataclass
 class Ledger:
-    conn: object
+    conn: sqlite3.Connection
 
     def append(self, kind: str, ref: str, payload: dict) -> str:
         cur = self.conn.execute("SELECT seq, hash FROM ledger ORDER BY seq DESC LIMIT 1")

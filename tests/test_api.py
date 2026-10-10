@@ -13,9 +13,9 @@ os.environ.setdefault("FIRSTLIGHT_AUTO_SEED", "false")
 os.environ.setdefault("FIRSTLIGHT_NOTIFY", "silent")
 
 from firstlight.api import app  # noqa: E402
+from firstlight.auth import DEMO_USERS, issue  # noqa: E402
 from firstlight.cli.seed import seed  # noqa: E402
 from firstlight.config import settings  # noqa: E402
-from firstlight.auth import issue, DEMO_USERS  # noqa: E402
 
 
 class TestApi(unittest.TestCase):
