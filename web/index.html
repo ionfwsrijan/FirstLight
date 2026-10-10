@@ -142,11 +142,18 @@
   .map-wrap{position:relative}
   .map-wrap svg{display:block;width:100%;height:auto}
   .map-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
-    font-size:11.5px;color:var(--muted)}
+    font-size:11.5px;color:#4b5246}
   .map-legend span{display:inline-flex;align-items:center;gap:6px}
-  .lg{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .lg{width:10px;height:10px;border-radius:3px;display:inline-block}
   .lg.circ{border-radius:50%}
   .lg.pin{background:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .lg-note{flex-basis:100%;font-size:10.5px;color:#6b7167;gap:0}
+  .school-pin{cursor:pointer}
+  .school-pin:hover path,.school-pin:focus-visible path{fill:#a8d211}
+  :focus-visible{outline:2px solid #7aa300;outline-offset:2px;border-radius:7px}
+  .nav-item:focus-visible,.role-opt:focus-visible{outline-offset:-2px}
+  @keyframes vdflash{0%{background:#e6ffc2}100%{background:transparent}}
+  .vlist li.flash,tbody tr.flash{animation:vdflash 1.6s ease}
 
   /* verdict list (dashboard) */
   .vlist{list-style:none;margin:0;padding:0}
@@ -365,8 +372,8 @@
   .map-wrap{overflow:hidden;border-radius:17px;background:
     radial-gradient(ellipse at 50% 50%,rgba(203,227,143,.2),transparent 60%),
     linear-gradient(135deg,rgba(239,241,234,.7),rgba(249,250,246,.78));padding:10px}
-  .map-wrap svg{filter:saturate(.72)}
-  .map-legend{border-color:rgba(35,41,31,.07);font-size:10px;color:#5f655b;padding-top:13px}
+  .map-wrap svg{filter:none}
+  .map-legend{border-color:rgba(35,41,31,.09);font-size:10.5px;color:#4b5246;padding-top:13px}
   .lg.pin{background:#92c800;box-shadow:0 0 0 3px #efffc8}
   .vlist li{padding:13px 10px 13px 13px;border-color:rgba(36,42,31,.09);gap:11px;border-radius:12px;transition:background .15s ease}.vlist li:hover{background:rgba(238,255,204,.34)}.vlist .nm{font-size:13px;font-weight:650;letter-spacing:-.02em}.vlist .ws{font-size:11px;color:#6b7167}.vlist .aqi b{font-size:15px;font-weight:700}.vlist .aqi small{font-size:9px;letter-spacing:.08em;color:#6b7167;text-transform:uppercase}.vlist li .chip{font-size:10px;padding:4px 9px}
   .mini-ring{width:37px;height:37px}.chip{font-size:9px;padding:3px 8px;letter-spacing:.015em}
@@ -416,15 +423,15 @@
       <span>server</span><b id="loginhealth" style="color:var(--muted)">…</b>
     </div>
     <div class="roles" id="roles">
-      <div class="role-opt" data-role="parent" data-user="parent@firstlight.demo" data-pass="parent123">
+      <div class="role-opt" role="button" tabindex="0" data-role="parent" data-user="parent@firstlight.demo" data-pass="parent123">
         <div class="r-ico p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
         <div><b>parent · Meera</b><small>Reads her child's school verdict and asks the 6 AM agent. Never sends.</small></div>
       </div>
-      <div class="role-opt" data-role="principal" data-user="principal@firstlight.demo" data-pass="principal123">
+      <div class="role-opt" role="button" tabindex="0" data-role="principal" data-user="principal@firstlight.demo" data-pass="principal123">
         <div class="r-ico pc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg></div>
         <div><b>principal · Mr. Rao</b><small>Everything a parent can, plus dispatch and recall alerts for the school, and the outbox.</small></div>
       </div>
-      <div class="role-opt" data-role="officer" data-user="officer@firstlight.demo" data-pass="officer123">
+      <div class="role-opt" role="button" tabindex="0" data-role="officer" data-user="officer@firstlight.demo" data-pass="officer123">
         <div class="r-ico o"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"></path><path d="M12 3a9 9 0 1 0 9 9c0-.5 0-1-.07-1.49"></path></svg></div>
         <div><b>officer · Kapoor</b><small>Runs the 6 AM morning, refreshes live fire data, reads the tamper-evident ledger, verifies the chain.</small></div>
       </div>
@@ -456,7 +463,7 @@
       </div>
       <div><b>FirstLight</b><small>console <b id="sidever">0.2.0</b></small></div>
     </div>
-    <nav>
+    <nav aria-label="Primary">
       <div class="nav-label">Workspace</div>
       <button class="nav-item active" data-view="dashboard">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M3 9h18M9 21V9"></path></svg>
@@ -482,7 +489,7 @@
       </div>
       <div class="sig">
         <em><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--good)"></span> session active</em>
-        <button id="logoutbtn" title="Sign out">
+        <button id="logoutbtn" title="Sign out" aria-label="Sign out">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
         </button>
       </div>
@@ -492,7 +499,7 @@
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <button class="menu-btn" id="menubtn">
+      <button class="menu-btn" id="menubtn" aria-label="Toggle navigation">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
       </button>
       <div>
@@ -558,9 +565,10 @@
               <div class="map-legend">
                 <span><span class="lg circ" style="background:var(--brand);box-shadow:0 0 0 1.5px #42560a"></span>school</span>
                 <span><span class="lg circ" style="background:#c7cedb"></span>station</span>
-                <span><span class="lg" style="background:#cf8f22"></span>active fire</span>
-                <span><span class="lg" style="border:1.5px solid #cf8f22;background:none"></span>contained</span>
-                <span><span class="lg" style="background:#7aa300;border-radius:50%;height:3px;width:16px"></span>wind 310°</span>
+                <span><span class="lg circ" style="background:#cf8f22"></span>active fire</span>
+                <span><span class="lg circ" style="border:1.5px solid #cf8f22;background:none"></span>contained</span>
+                <span><span class="lg" style="background:#7aa300;border-radius:2px;height:3px;width:16px"></span>wind from 310°</span>
+                <span class="lg-note">A marker can group several nearby fires — the number is how many.</span>
               </div>
             </div>
           </div>
@@ -616,7 +624,7 @@
         </div>
         <div class="agent-grid">
           <div class="card chat">
-            <div class="chatlog" id="chatlog"></div>
+            <div class="chatlog" id="chatlog" role="log" aria-live="polite" aria-label="Conversation with the 6 AM agent"></div>
             <div class="composer">
               <select id="agSchool"></select>
               <input id="agMsg" placeholder="e.g. is today safe for school?">
@@ -746,13 +754,17 @@ const BAND_HEX = {"Good":"#2eb872","Satisfactory":"#a3c000","Moderate":"#f7d800"
 const BAND_INK = {"Good":"#1e8a54","Satisfactory":"#6d8200","Moderate":"#8a6d00","Poor":"#b25f00","Very Poor":"#9c3a00","Severe":"#8a1320"};
 const bandInk = (label, hex) => BAND_INK[label] || hex || "#5f655b";
 const LEVEL = ["GREEN","PROTECTED","CLOSED"];
-
+const LEVEL_META = {
+  GREEN:     {cls:"green",     name:"GREEN",     desc:"Open normally — effective AQI is within the safe band for this school."},
+  PROTECTED: {cls:"protected", name:"PROTECTED", desc:"Open with measures — outdoor play and strenuous activity are limited while AQI is elevated."},
+  CLOSED:    {cls:"closed",    name:"CLOSED",    desc:"Campus shut — in-person classes are cancelled and lessons move online for the day."},
+};
 function levelInfo(v) {
   const n = (v === 0 || v === 1 || v === 2) ? LEVEL[v] : String(v);
-  const cls = {GREEN:"green",PROTECTED:"protected",CLOSED:"closed"}[n] || "grey";
-  return {name:n, cls};
+  const meta = LEVEL_META[n] || {cls:"grey", name:n, desc:""};
+  return {name:n, cls:meta.cls, desc:meta.desc};
 }
-const chip = (v, label) => { const l = levelInfo(v); return `<span class="chip ${l.cls}"><span class="dot"></span>${label || l.name}</span>`; };
+const chip = (v, label) => { const l = levelInfo(v); return `<span class="chip ${l.cls}" title="${esc(l.desc)}"><span class="dot" aria-hidden="true"></span>${label || l.name}</span>`; };
 const bandHex = (label) => BAND_HEX[label] || "#98A2B3";
 const compass = (deg) => {
   const d = ((deg % 360) + 360) % 360;
@@ -855,10 +867,13 @@ function scenarioMap(inputs) {
     return `<circle cx="${px}" cy="${py}" r="${fireR(c.n).toFixed(1)}" fill="#e0a02a" fill-opacity=".15" stroke="#cf8f22" stroke-width="1"/>
       <circle cx="${px}" cy="${py}" r="1.6" fill="#c9831a" fill-opacity=".8"/>`;
   }).join("");
-  // label only well-separated large clusters so the counts stop crowding each other
+  // label only well-separated large clusters so counts never collide with other markers
   const chosen = [];
   clusters.filter(c => c.n >= 4).forEach(c => {
-    if (chosen.length < 3 && chosen.every(p => Math.hypot(p.cx - c.cx, p.cy - c.cy) >= 46)) chosen.push(c);
+    if (chosen.length >= 3) return;
+    const clearOfPins = clusters.every(o => o === c || Math.hypot(o.cx - c.cx, o.cy - c.cy) >= fireR(c.n) + fireR(o.n) + 2);
+    const clearOfLabels = chosen.every(p => Math.hypot(p.cx - c.cx, p.cy - c.cy) >= 54);
+    if (clearOfPins && clearOfLabels) chosen.push(c);
   });
   const fireLabs = chosen.map(c => {
     const rr = fireR(c.n);
@@ -870,7 +885,10 @@ function scenarioMap(inputs) {
     `<circle cx="${x(s.lon).toFixed(1)}" cy="${y(s.lat).toFixed(1)}" r="2.1" fill="#c7cedb"/>`).join("");
   const schoolPins = schools.map(s => {
     const px = x(s.lon).toFixed(1), py = y(s.lat).toFixed(1);
-    return `<g transform="translate(${px},${py})">
+    const dd = decisionFor(s.id);
+    const lab = dd ? `${s.name} — ${dd.levelName}, AQI ${Math.round(dd.aqiEffective)}. Select to open its verdict.` : `${s.name}. Select to open its details.`;
+    return `<g class="school-pin" role="button" tabindex="0" data-school-id="${esc(s.id)}" aria-label="${esc(lab)}" transform="translate(${px},${py})">
+      <title>${esc(s.name)}</title>
       <path d="M0 0 C-3.1 -5 -5.1 -7 -5.1 -9.6 A5.1 5.1 0 1 1 5.1 -9.6 C5.1 -7 3.1 -5 0 0 Z" fill="var(--brand)" stroke="#42560a" stroke-width="1.3" stroke-linejoin="round"/>
       <circle cx="0" cy="-9.6" r="1.9" fill="#fff"/>
     </g>`;
@@ -882,7 +900,8 @@ function scenarioMap(inputs) {
   const wcx = x(stations.length ? (stations.reduce((a, s) => a + s.lon, 0) / stations.length) : 77.2);
   const wcy = y(stations.length ? (stations.reduce((a,s)=>a+s.lat,0)/stations.length) : 28.6);
   return `
-  <svg viewBox="0 0 392 296" role="img" aria-label="Scenario map: NCR schools and stations, Punjab-Haryana stubble fires, wind from ${d} degrees">
+  <svg viewBox="0 0 392 296" role="img" aria-label="Schematic map of Delhi NCR: ${schools.length} schools, ${stations.length} monitoring stations, and ${fires.length} stubble fires shown as ${clusters.length} grouped markers; wind from ${d} degrees.">
+    <title>Delhi NCR schematic — schools, stations and Punjab–Haryana stubble fires</title>
     ${grid.join("")}
     ${regionLabs}
     ${fireDots}${fireLabs}
@@ -902,7 +921,7 @@ function scenarioMap(inputs) {
       <path d="M0 -3.5 V3.5 M${scalePx} -3.5 V3.5" stroke="#8f96a3" stroke-width="1.6"/>
       <text x="${(Number(scalePx) / 2).toFixed(0)}" y="-5" text-anchor="middle" font-size="7.5" fill="#8f96a3" font-weight="600" font-family="Inter,system-ui">100 km</text>
     </g>
-    <text x="12" y="286" font-size="8.5" fill="#6b7167" font-weight="600" font-family="Inter,system-ui">${fires.length} fires · ${activeFires} active · ${clusters.length} shown</text>
+    <text x="12" y="286" font-size="8.5" fill="#5f655b" font-weight="600" font-family="Inter,system-ui">${fires.length} fires · ${clusters.length} map markers · ${activeFires} active</text>
   </svg>`;
 }
 
@@ -982,8 +1001,8 @@ function renderDashboard() {
 
   const kpi = [
     {cls:"good", t:"Schools open", v: cnt[0] || 0, s:`of ${n} schools`},
-    {cls:"amber", t:"Protected", v: cnt[1] || 0, s:"open with measures"},
-    {cls:"red", t:"Closed", v: cnt[2] || 0, s:"classes online"},
+    {cls:"amber", t:"Protected", v: cnt[1] || 0, s:"open with measures · play limited"},
+    {cls:"red", t:"Closed", v: cnt[2] || 0, s:"campus shut · classes online"},
     {cls:"blue", t:"Highest AQI", v: maxAqi ? Math.round(maxAqi.aqiEffective) : "—", s: maxAqi ? `${maxAqi.bandLabel} · ${maxAqi.schoolId}` : "no decisions yet", color: maxAqi ? bandInk(maxAqi.bandLabel, maxAqi.bandHex) : undefined},
   ];
   $("kpiRow").innerHTML = kpi.map(k =>
@@ -1009,14 +1028,31 @@ function renderDashboard() {
     return `<li style="box-shadow:inset 3px 0 0 ${d.bandHex}">
       <div style="min-width:0"><div class="nm">${esc(s.name)}</div><div class="ws">${esc(s.ward)} · ${d.bandLabel}</div></div>
       ${ringSvg(d.aqiEffective, d.bandHex, 42)}
-      <div class="aqi"><b style="color:${bandInk(d.bandLabel, d.bandHex)}">${Math.round(d.aqiEffective)}</b><small>AQI</small></div>
+      <div class="aqi" aria-label="AQI ${Math.round(d.aqiEffective)}, ${esc(d.bandLabel)}"><b style="color:${bandInk(d.bandLabel, d.bandHex)}">${Math.round(d.aqiEffective)}</b><small>AQI</small></div>
       ${chip(d.level)}
     </li>`;
   }).join("")}</ul>` : `<div class="empty"><span class="ico">${SVG.smoke}</span>No schools loaded.</div>`;
 
   $("mapWrap").innerHTML = scenarioMap(ins);
+  $("mapWrap").querySelectorAll("[data-school-id]").forEach(el => {
+    const go = () => selectSchool(el.dataset.schoolId);
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
   if (state.role === "officer") { $("activityCard").classList.remove("hidden"); renderActivity(); }
   else $("activityCard").classList.add("hidden");
+}
+function selectSchool(id) {
+  if (!id) return;
+  state.selected = id;
+  if (state.view !== "schools") setView("schools");
+  else renderSchoolsView();
+  const row = $("schoolTableWrap").querySelector(`tr[data-id="${(window.CSS && CSS.escape) ? CSS.escape(id) : id}"]`);
+  if (row) {
+    row.classList.add("flash");
+    row.scrollIntoView({ block: "center", behavior: "smooth" });
+    setTimeout(() => row.classList.remove("flash"), 1700);
+  }
 }
 function renderActivity() {
   const rows = state.ledger.slice(0, 10);
@@ -1034,7 +1070,7 @@ function renderSchoolsTable() {
     const d = decisionFor(s.id);
     const hist = state.inputs && state.inputs.historyAqi ? (state.inputs.historyAqi[s.id] || []) : [];
     const sel = state.selected === s.id ? " sel" : "";
-    const aqiCell = d ? `<span class="td-num" style="color:${bandInk(d.bandLabel, d.bandHex)}">${Math.round(d.aqiEffective)}</span><span style="color:var(--faint);font-size:11px"> ${esc(d.bandLabel)}</span>` : '<span style="color:var(--faint)">—</span>';
+    const aqiCell = d ? `<span class="td-num" style="color:${bandInk(d.bandLabel, d.bandHex)}" aria-label="AQI ${Math.round(d.aqiEffective)}, ${esc(d.bandLabel)}">${Math.round(d.aqiEffective)}</span><span style="color:var(--faint);font-size:11px"> ${esc(d.bandLabel)}</span>` : '<span style="color:var(--faint)">—</span>';
     return `<tr class="${sel}" data-id="${esc(s.id)}">
       <td><div class="sch-name">${esc(s.name)}</div><div class="sch-meta">${esc(s.ward)} · opens ${esc(s.opensAt)}</div></td>
       <td>${d ? chip(d.level) : '<span class="chip grey">no decision</span>'}</td>
@@ -1332,9 +1368,9 @@ function renderChips() {
   if (el) {
     if (fetched) {
       el.style.display = "";
-      $("chipAsOfTxt").textContent = `live as of ${fmtIst(fetched)}`;
+      $("chipAsOfTxt").textContent = anyFallback ? "live · fell back" : "live inputs";
       $("chipAsOfDot").style.background = anyFallback ? "var(--amber)" : "var(--good)";
-      el.title = `live inputs fetched ${new Date(fetched).toUTCString()} (${timeAgo(fetched)})`;
+      el.title = `Live inputs as of ${fmtIst(fetched)} IST (${timeAgo(fetched)}) — full provenance in the banner below.`;
     } else {
       el.style.display = "none";
     }
@@ -1425,13 +1461,17 @@ async function enter() {
 
 /* ---------- login ---------- */
 const roleButtons = () => document.querySelectorAll(".role-opt");
-roleButtons().forEach(opt => opt.addEventListener("click", () => {
+function fillRole(opt) {
   roleButtons().forEach(o => o.classList.remove("sel"));
   opt.classList.add("sel");
   $("username").value = opt.dataset.user || "";
   $("password").value = opt.dataset.pass || "";
   $("username").focus();
-}));
+}
+roleButtons().forEach(opt => {
+  opt.addEventListener("click", () => fillRole(opt));
+  opt.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fillRole(opt); } });
+});
 $("continuebtn").onclick = async () => {
   $("continuebtn").disabled = true; $("continuebtn").textContent = "Signing in…";
   try { await enter(); }
