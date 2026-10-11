@@ -51,7 +51,9 @@ code — tested **167 times**.
 > **Honest limits.** The engine executes the *published* thresholds exactly; it
 > has **not** been validated with education or public-health authorities for
 > actual closure authority, and no real school's closure depends on it today.
-> Before it is trusted for a real morning it needs exactly that one sign-off.
+> Before it is trusted for a real morning it needs exactly that one sign-off —
+> the two-week shadow pilot and its falsifiable success criteria are written up
+> in [docs/VALIDITY.md](docs/VALIDITY.md).
 
 ![FirstLight — the 6 AM decision](docs/assets/banner.svg)
 
