@@ -32,7 +32,10 @@ to drift.
   When the rules change, you edit the DSL — you do not retrain anything.
 - **No AI in the decision.** An LLM lives only in the narrating layer. Every
   verdict is produced by rules you can read in one file, and no prompt can
-  overwrite it — there is no loop to induce, and no human override to lobby.
+  overwrite it — the decision is consistent, traced, and audited, while
+  authorized officials (principal, officer) remain accountable: nothing
+  dispatches without their explicit confirmation, and the review path (re-run
+  the morning, read the receipt) stays ordinary.
 
 ## Why that is stronger than a backtest
 

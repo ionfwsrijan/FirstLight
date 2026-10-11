@@ -12,7 +12,7 @@
 [![CI](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/ionfwsrijan/FirstLight/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2eb872)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-163%20passed-2eb872)](tests/)
+[![Tests](https://img.shields.io/badge/tests-167%20passed-2eb872)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-2eb872)](pyproject.toml)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
@@ -38,7 +38,20 @@ told, honestly, that only a principal or officer can dispatch.
 Nothing here depends on a model making the call. The class of 2026 does not get
 its school day decided by a coin toss or a temperature setting. The rules
 decide; the ledger proves it. The safety property is ordinary, deterministic
-code — tested **163 times**.
+code — tested **167 times**.
+
+> **For the person making the call.** FirstLight is *decision support* run on
+> the published CPCB bands and CAQM GRAP stages. It gives a principal a
+> defensible, receipted 6 AM answer — and gives a parent the same answer,
+> honestly. It never substitutes for the official: nothing dispatches without
+> an authorized principal's or officer's explicit confirmation, the decision
+> stays consistent and auditable, and the human review path stays ordinary
+> (re-run the morning, read the receipt, change only policy — not the output).
+>
+> **Honest limits.** The engine executes the *published* thresholds exactly; it
+> has **not** been validated with education or public-health authorities for
+> actual closure authority, and no real school's closure depends on it today.
+> Before it is trusted for a real morning it needs exactly that one sign-off.
 
 ![FirstLight — the 6 AM decision](docs/assets/banner.svg)
 
