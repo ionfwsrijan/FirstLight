@@ -170,7 +170,7 @@ and that it happened*. FirstLight's controls are in code, not in a prompt:
 ```bash
 make setup            # create .venv, install the package + dev deps
 make serve            # console at http://127.0.0.1:8000
-make test             # 163 tests; coverage floor 85%
+make test             # 167 tests; coverage floor 85%
 make lint             # ruff + mypy (clean)
 ```
 
@@ -230,7 +230,7 @@ firstlight/
 web/index.html    single-file, zero-build console (served identically by the twin)
 sam/              template.yaml · handlers/ (8 Lambdas) · build_layer.py · static/index.py
 docs/             architecture.md · LEARNINGS.md · submission.md · demo-script.md
-tests/            163 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
+tests/            167 tests: bands, geometry, interpolation, plume, trend, DSL, ledger tamper,
                   consent, tokens, roles, API, pipeline, CPCB AQI, FIRMS parsing, notifier, SAM-mirror
 ```
 
@@ -238,7 +238,7 @@ tests/            163 tests: bands, geometry, interpolation, plume, trend, DSL, 
 
 ```bash
 make help             # every target, one line each
-make test             # full gate (163 tests) + coverage
+make test             # full gate (167 tests) + coverage
 make lint             # ruff check + mypy
 cfn-lint sam/template.yaml
 sam validate --template sam/template.yaml --lint

@@ -18,7 +18,7 @@ to drift.
 | The deciding rule for every school is identifiable and quotable | every `Decision` carries a full rule trace (`R-CLOSE-401`, `R-CLOSE-VP-PLUME`, `R-PROTECT-201`, …) and the ledger stores it | open any live receipt in the console — it names the rule and the AQI |
 | The cloud output is byte-for-byte the local output | **Parity test** (`tests/test_sam_mirror.py`) flips `SOURCE_MODE` and asserts identical payloads — the same engine ships as a Lambda layer | `pytest tests/test_sam_mirror.py` |
 | Verdicts are deterministic and tamper-evident | same input → same decision hash, every run, on any fresh database; the ledger is hash-chained and verified after every morning | `pytest tests/test_golden_morning.py tests/test_ledger.py` |
-| The whole behavior is regression-locked | 163 tests across the DSL, interpolation, plume, trend, bands, auth (Cedar), consent, ledger, API, and the AWS mirror — run in CI on every push | `py -m firstlight.cli gate` |
+| The whole behavior is regression-locked | 167 tests across the DSL, interpolation, plume, trend, bands, auth (Cedar), consent, ledger, API, and the AWS mirror — run in CI on every push | `py -m firstlight.cli gate` |
 
 ## What we explicitly do NOT claim
 

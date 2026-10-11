@@ -63,7 +63,7 @@ if role not in ("principal", "officer"):
 dispatch_once(decision)             # exactly once
 ```
 
-Every consent and intent variant has its own test. There are **163 tests** and **87% coverage**, and the safety model is asserted directly rather than described.
+Every consent and intent variant has its own test. There are **167 tests** and **87% coverage**, and the safety model is asserted directly rather than described.
 
 ## It executes once — then proves it
 
