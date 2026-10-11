@@ -16,7 +16,11 @@
 [![Coverage](https://img.shields.io/badge/coverage-87%25-2eb872)](pyproject.toml)
 [![Built on AWS](https://img.shields.io/badge/built%20on-AWS-ff9900)](docs/architecture.md)
 
-**Live console:** <https://8s2dtqrqzi.execute-api.ap-south-2.amazonaws.com/dev/> · **Architecture:** [docs/architecture.md](docs/architecture.md) · **Real vs simulated:** [docs/LEARNINGS.md](docs/LEARNINGS.md) · **Submission map:** [docs/submission.md](docs/submission.md) · **Ship It runbook:** [sam/README.md](sam/README.md) · **Try it locally:** `make setup && make serve`
+**Live console:** <https://8s2dtqrqzi.execute-api.ap-south-2.amazonaws.com/dev/> · **Architecture:** 
+[docs/architecture.md](docs/architecture.md) · **Real vs simulated:** [docs/LEARNINGS.md](docs/LEARNINGS.md) · 
+**Validity model (logic, not likelihood):** [docs/VALIDITY.md](docs/VALIDITY.md) · 
+**Submission map:** [docs/submission.md](docs/submission.md) · **Ship It runbook:** [sam/README.md](sam/README.md) · 
+**Try it locally:** `make setup && make serve`
 
 It is 6 AM in Delhi in early November. The air is 427 on the CPCB scale at
 Anand Vihar and there are six stubble fires upwind in Punjab. Nobody has called
